@@ -226,8 +226,8 @@
       gap: 8px;
       align-items: flex-start;
       border-top: 1px solid var(--line);
-      padding: 4px 0;
-      min-height: 32px;
+      height: 32px;
+      box-sizing: border-box;
     }
 
     .hour-label {
@@ -242,6 +242,43 @@
       flex-wrap: wrap;
       gap: 6px;
       flex: 1;
+    }
+
+    /* ---------------- timeline: timed events overlay ---------------- */
+    .timeline-events-overlay {
+      position: absolute;
+      top: 0;
+      left: calc(3.5em + 8px);
+      right: 0;
+      pointer-events: none;
+    }
+
+    .timed-event {
+      position: absolute;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+
+    .resize-handle {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 7px;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 2px;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, .7);
     }
 
     /* ---------------- detail panel ---------------- */
@@ -310,6 +347,9 @@
       <input id="detail-title" type="text">
       <label>メモ</label>
       <textarea id="detail-memo" rows="2"></textarea>
+      <label>所要時間（時間）</label>
+      <input id="detail-duration" type="number" min="1" max="24" step="1" style="width:6em">
+      <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
       <label>ステータス（人が決める）</label>
       <div class="row">
         <button id="status-tentative" class="secondary">未確定</button>
@@ -332,6 +372,7 @@
     // ============================================================
     const STORAGE_KEY = 'tentative_calendar_events';
     const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
+    const HOUR_H = 32; // タイムラインの1時間あたりの高さ(px)。CSSの .hour-row の height と合わせる
 
     function loadEvents() {
       try {
@@ -516,6 +557,7 @@
       });
 
       timelineHoursEl.innerHTML = '';
+      timelineHoursEl.style.position = 'relative';
       for (let h = 0; h < 24; h++) {
         const row = document.createElement('div');
         row.className = 'hour-row';
@@ -527,7 +569,6 @@
 
         const slot = document.createElement('div');
         slot.className = 'hour-events';
-        events.filter(ev => ev.time === `${pad2(h)}:00`).forEach(ev => slot.appendChild(createEventChip(ev)));
         row.appendChild(slot);
 
         addDropHandlers(row, (id) => {
@@ -542,6 +583,97 @@
 
         timelineHoursEl.appendChild(row);
       }
+
+      // 時刻ありの予定を、時間帯が重ならないよう横のレーンに振り分けて重ねて配置する
+      const timed = events
+        .filter(ev => ev.time)
+        .map(ev => ({ ev, start: parseInt(ev.time, 10), duration: ev.duration || 1 }));
+      const { laneOf, laneCount } = assignLanes(timed);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'timeline-events-overlay';
+      overlay.style.height = (24 * HOUR_H) + 'px';
+      timed.forEach(({ ev, start, duration }) => {
+        const lane = laneOf[ev.id];
+        const widthPct = 100 / laneCount;
+        const chip = createTimedEventChip(ev, {
+          top: (start * HOUR_H) + 'px',
+          height: (duration * HOUR_H - 2) + 'px',
+          left: `calc(${lane * widthPct}%)`,
+          width: `calc(${widthPct}% - 4px)`,
+        });
+        overlay.appendChild(chip);
+      });
+      timelineHoursEl.appendChild(overlay);
+    }
+
+    // 重ならないよう予定を横のレーンに割り当てる（時間帯が重なるものだけレーンを分ける）
+    function assignLanes(timedEvents) {
+      const sorted = [...timedEvents].sort((a, b) => a.start - b.start);
+      const laneEnds = []; // 各レーンで最後に置いた予定の終了時刻
+      const laneOf = {};
+      sorted.forEach(({ ev, start, duration }) => {
+        const end = start + duration;
+        let lane = laneEnds.findIndex(endTime => endTime <= start);
+        if (lane === -1) {
+          lane = laneEnds.length;
+          laneEnds.push(end);
+        } else {
+          laneEnds[lane] = end;
+        }
+        laneOf[ev.id] = lane;
+      });
+      return { laneOf, laneCount: Math.max(1, laneEnds.length) };
+    }
+
+    // タイムライン用の予定チップ（位置指定＋下端の時間延長ハンドル付き）
+    function createTimedEventChip(ev, style) {
+      const chip = createEventChip(ev);
+      chip.classList.add('timed-event');
+      Object.assign(chip.style, style);
+
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      handle.title = 'ドラッグして所要時間を変更';
+      handle.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      handle.addEventListener('pointerdown', (e) => startResize(e, ev.id, chip));
+      chip.appendChild(handle);
+      return chip;
+    }
+
+    // 予定ブロックの下端をドラッグして所要時間（時間単位）を変更する
+    function startResize(e, id, chipEl) {
+      e.preventDefault();
+      e.stopPropagation();
+      const events = loadEvents();
+      const ev = events.find(x => x.id === id);
+      if (!ev || !ev.time) return;
+
+      const startY = e.clientY;
+      const startDuration = ev.duration || 1;
+      const startHour = parseInt(ev.time, 10);
+      const maxDuration = 24 - startHour;
+      let finalDuration = startDuration;
+
+      function onMove(moveEvent) {
+        const deltaHours = Math.round((moveEvent.clientY - startY) / HOUR_H);
+        finalDuration = Math.min(maxDuration, Math.max(1, startDuration + deltaHours));
+        chipEl.style.height = (finalDuration * HOUR_H - 2) + 'px';
+      }
+      function onUp() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        if (finalDuration !== startDuration) {
+          ev.duration = finalDuration;
+          saveEvents(events);
+        }
+        renderAll();
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     }
 
     // ============================================================
@@ -589,6 +721,7 @@
         status: 'TENTATIVE',
         date: null,
         time: null,
+        duration: 1,
         createdAt: Date.now(),
         remindedOn: null,
       });
@@ -610,6 +743,7 @@
       if (!ev) return;
       document.getElementById('detail-title').value = ev.title;
       document.getElementById('detail-memo').value = ev.memo || '';
+      document.getElementById('detail-duration').value = ev.duration || 1;
       highlightStatus(ev.status);
       detailSection.hidden = false;
       detailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -636,6 +770,8 @@
       if (!ev) return;
       ev.title = document.getElementById('detail-title').value.trim() || ev.title;
       ev.memo = document.getElementById('detail-memo').value;
+      const durationInput = parseInt(document.getElementById('detail-duration').value, 10);
+      ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
       if (pendingStatus) ev.status = pendingStatus;
       pendingStatus = null;
       saveEvents(events);
