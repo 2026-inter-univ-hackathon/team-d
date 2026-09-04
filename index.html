@@ -1,108 +1,738 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>プロダクト名</title>
-<style>
-  /* ============================================================
-     見た目。動線が通ってから、時間が余ったら手を入れる
-     ============================================================ */
-  :root { --fg: #1a1a1a; --bg: #fff; --line: #d8dce2; --accent: #2b6cb0; }
-  * { box-sizing: border-box; }
-  body {
-    font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
-    color: var(--fg); background: var(--bg);
-    margin: 0; padding: 24px; line-height: 1.6;
-  }
-  main { max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin: 0 0 4px; }
-  .lead { color: #666; margin: 0 0 24px; }
-  section { border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-  h2 { font-size: 1rem; margin: 0 0 12px; }
-  input, textarea, button { font: inherit; }
-  input, textarea { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 4px; }
-  button { padding: 8px 16px; border: 0; border-radius: 4px; background: var(--accent); color: #fff; cursor: pointer; }
-  button:hover { opacity: .85; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .muted { color: #666; font-size: .9rem; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>未確定予定管理カレンダー</title>
+  <style>
+    :root {
+      --fg: #1a1a1a;
+      --bg: #fff;
+      --line: #d8dce2;
+      --accent: #2b6cb0;
+      --gray: #9aa0a6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      margin: 0;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 4px;
+    }
+
+    .lead {
+      color: #666;
+      margin: 0 0 24px;
+    }
+
+    section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 1rem;
+      margin: 0 0 12px;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    textarea {
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: .85;
+    }
+
+    button.secondary {
+      background: #eee;
+      color: var(--fg);
+    }
+
+    button.danger {
+      background: #c0392b;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: #666;
+      font-size: .9rem;
+    }
+
+    /* ---------------- toolbar ---------------- */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #current-label {
+      font-weight: bold;
+      min-width: 8em;
+      text-align: center;
+    }
+
+    /* ---------------- tray ---------------- */
+    #tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 48px;
+      padding: 8px;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+    }
+
+    #tray.drag-over,
+    .day-cell.drag-over,
+    .hour-row.drag-over {
+      background: #eaf2fb;
+    }
+
+    /* ---------------- event chip ---------------- */
+    .event {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: .85rem;
+      cursor: grab;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid var(--accent);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .event.status-tentative {
+      background: repeating-linear-gradient(45deg, #dce8f5, #dce8f5 6px, #eef4fb 6px, #eef4fb 12px);
+      color: var(--accent);
+      border: 2px dashed var(--accent);
+      opacity: .85;
+    }
+
+    .event.status-confirmed {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .event.status-completed {
+      background: #eee;
+      color: #888;
+      border: 2px solid #ddd;
+      text-decoration: line-through;
+      opacity: .7;
+    }
+
+    /* ---------------- month view ---------------- */
+    #month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .weekday {
+      text-align: center;
+      font-size: .8rem;
+      color: #666;
+      padding: 4px 0;
+    }
+
+    .day-cell {
+      min-height: 90px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .day-cell.other-month {
+      background: #fafafa;
+      color: #ccc;
+    }
+
+    .day-cell.today {
+      border-color: var(--accent);
+      border-width: 2px;
+    }
+
+    .day-num {
+      font-size: .8rem;
+      font-weight: bold;
+    }
+
+    /* ---------------- timeline view ---------------- */
+    #timeline-allday {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+      min-height: 36px;
+      padding: 6px;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+    }
+
+    .hour-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      border-top: 1px solid var(--line);
+      padding: 4px 0;
+      min-height: 32px;
+    }
+
+    .hour-label {
+      width: 3.5em;
+      flex-shrink: 0;
+      font-size: .8rem;
+      color: #666;
+    }
+
+    .hour-events {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+
+    /* ---------------- detail panel ---------------- */
+    #detail-section label {
+      display: block;
+      font-size: .85rem;
+      color: #666;
+      margin: 8px 0 4px;
+    }
+
+    #detail-section .row {
+      margin-top: 12px;
+    }
+  </style>
 </head>
+
 <body>
-<main>
+  <main>
 
-  <h1>プロダクト名</h1>
-  <p class="lead">一言で何か（誰の、何を解決するか）</p>
+    <h1>未確定予定管理カレンダー</h1>
+    <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
-  <!-- ============================================================
-       ここから下が本体。セクションを足したり消したりして作る
+    <section>
+      <div class="toolbar">
+        <div class="row">
+          <button id="view-month">月表示</button>
+          <button id="view-timeline" class="secondary">タイムライン</button>
+        </div>
+        <div class="row">
+          <button id="nav-prev" class="secondary">◀</button>
+          <button id="nav-today" class="secondary">今日</button>
+          <button id="nav-next" class="secondary">▶</button>
+          <span id="current-label"></span>
+        </div>
+        <button id="notify-btn" class="secondary">🔔 通知を有効にする</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>未確定トレイ（日時未定の予定）</h2>
+      <div class="row">
+        <input id="new-title" type="text" placeholder="予定のタイトル" style="flex:1">
+        <button id="add-event">トレイに追加</button>
+      </div>
+      <p class="muted">ここに追加した予定は、下のカレンダー／タイムラインへドラッグして日時を割り当ててください。</p>
+      <div id="tray"></div>
+    </section>
+
+    <section>
+      <div id="month-view">
+        <div id="month-grid"></div>
+      </div>
+      <div id="timeline-view" hidden>
+        <div id="timeline-allday"></div>
+        <div id="timeline-hours"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+       AI に任せない部分：予定の状態（未確定→確定／完了）は
+       人がこのパネルのボタンを押すまで自動では変わりません。
        ============================================================ -->
+    <section id="detail-section" hidden>
+      <h2>予定の詳細</h2>
+      <label>タイトル</label>
+      <input id="detail-title" type="text">
+      <label>メモ</label>
+      <textarea id="detail-memo" rows="2"></textarea>
+      <label>ステータス（人が決める）</label>
+      <div class="row">
+        <button id="status-tentative" class="secondary">未確定</button>
+        <button id="status-confirmed" class="secondary">確定</button>
+        <button id="status-completed" class="secondary">完了</button>
+      </div>
+      <div class="row">
+        <button id="detail-save">保存</button>
+        <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
+        <button id="detail-delete" class="danger">削除</button>
+        <button id="detail-close" class="secondary">閉じる</button>
+      </div>
+    </section>
 
-  <section>
-    <h2>入力</h2>
-    <div class="row">
-      <input id="input" type="text" placeholder="ここに入力">
-      <button id="save">保存</button>
-    </div>
-  </section>
+  </main>
 
-  <section>
-    <h2>結果</h2>
-    <div id="output" class="muted">まだ何もありません</div>
-  </section>
+  <script>
+    // ============================================================
+    // データの保存と読み込み（localStorage）
+    // ============================================================
+    const STORAGE_KEY = 'tentative_calendar_events';
+    const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
 
-  <!-- ============================================================
-       AI に任せない部分は、ここに置くことが多いです。
-       AI が候補を出して、最後に人が選ぶ／決める場所を1つ残してください。
-       （例）候補を3つ並べて、人がボタンで選ぶ
-       ============================================================ -->
+    function loadEvents() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    }
 
-</main>
+    function saveEvents(events) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    }
 
-<script>
-// ============================================================
-// データの保存と読み込み（localStorage）
-// この2つの関数だけ使えば、リロードしても消えません
-// ============================================================
+    function uid() {
+      return 'ev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    }
 
-const STORAGE_KEY = 'app-data';
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
 
-function loadData() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? {};
-  } catch {
-    return {};   // 壊れた値が入っていても落ちないようにする
-  }
-}
+    function dateStr(d) {
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+    function todayStr() {
+      return dateStr(new Date());
+    }
 
-// ============================================================
-// ここから下が処理。動線を1本だけ通す
-//   ① 人が入力すること → ② 画面で起きること → ③ 人が目にする結果
-// この3つが繋がったら、9/4 は合格です。枝分かれは作らないでください。
-// ============================================================
+    // ============================================================
+    // 状態
+    // ============================================================
+    let view = 'month';       // 'month' | 'timeline'
+    let viewDate = new Date(); // 月表示: この月を表示 / タイムライン: この日を表示
+    let selectedEventId = null;
 
-const input  = document.getElementById('input');
-const output = document.getElementById('output');
+    const trayEl = document.getElementById('tray');
+    const monthViewEl = document.getElementById('month-view');
+    const timelineViewEl = document.getElementById('timeline-view');
+    const monthGridEl = document.getElementById('month-grid');
+    const timelineAlldayEl = document.getElementById('timeline-allday');
+    const timelineHoursEl = document.getElementById('timeline-hours');
+    const currentLabelEl = document.getElementById('current-label');
+    const detailSection = document.getElementById('detail-section');
 
-function render() {
-  const data = loadData();
-  output.textContent = data.text ? data.text : 'まだ何もありません';
-  output.className = data.text ? '' : 'muted';
-}
+    // ============================================================
+    // 予定チップの生成（ドラッグ元・クリックで詳細表示）
+    // ============================================================
+    function createEventChip(ev) {
+      const chip = document.createElement('div');
+      chip.className = `event status-${ev.status.toLowerCase()}`;
+      chip.textContent = ev.title || '(無題)';
+      chip.draggable = true;
+      chip.dataset.id = ev.id;
+      chip.title = ev.memo || ev.title;
+      chip.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', ev.id);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      chip.addEventListener('click', () => openDetail(ev.id));
+      return chip;
+    }
 
-document.getElementById('save').addEventListener('click', () => {
-  const data = loadData();
-  data.text = input.value;
-  saveData(data);
-  input.value = '';
-  render();
-});
+    function addDropHandlers(el, onDrop) {
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain');
+        if (id) onDrop(id);
+      });
+    }
 
-render();
-</script>
+    // ============================================================
+    // 描画：未確定トレイ（日時未定の予定）
+    // ============================================================
+    function renderTray() {
+      const events = loadEvents();
+      trayEl.innerHTML = '';
+      const untimed = events.filter(ev => !ev.date);
+      if (untimed.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'トレイは空です';
+        trayEl.appendChild(empty);
+      }
+      untimed.forEach(ev => trayEl.appendChild(createEventChip(ev)));
+    }
+
+    addDropHandlers(trayEl, (id) => {
+      const events = loadEvents();
+      const ev = events.find(e => e.id === id);
+      if (!ev) return;
+      ev.date = null;
+      ev.time = null;
+      saveEvents(events);
+      renderAll();
+    });
+
+    // ============================================================
+    // 描画：月表示
+    // ============================================================
+    function renderMonth() {
+      monthGridEl.innerHTML = '';
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      currentLabelEl.textContent = `${year}年${month + 1}月`;
+
+      ['日', '月', '火', '水', '木', '金', '土'].forEach(w => {
+        const el = document.createElement('div');
+        el.className = 'weekday';
+        el.textContent = w;
+        monthGridEl.appendChild(el);
+      });
+
+      const firstOfMonth = new Date(year, month, 1);
+      const startOffset = firstOfMonth.getDay();
+      const gridStart = new Date(year, month, 1 - startOffset);
+      const events = loadEvents();
+      const today = todayStr();
+
+      for (let i = 0; i < 42; i++) {
+        const cellDate = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+        const cellStr = dateStr(cellDate);
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        if (cellDate.getMonth() !== month) cell.classList.add('other-month');
+        if (cellStr === today) cell.classList.add('today');
+
+        const num = document.createElement('div');
+        num.className = 'day-num';
+        num.textContent = cellDate.getDate();
+        cell.appendChild(num);
+
+        events.filter(ev => ev.date === cellStr).forEach(ev => cell.appendChild(createEventChip(ev)));
+
+        addDropHandlers(cell, (id) => {
+          const evs = loadEvents();
+          const ev = evs.find(e => e.id === id);
+          if (!ev) return;
+          ev.date = cellStr; // 月表示では時刻は付けない
+          saveEvents(evs);
+          renderAll();
+        });
+
+        monthGridEl.appendChild(cell);
+      }
+    }
+
+    // ============================================================
+    // 描画：日別タイムライン（0〜23時）
+    // ============================================================
+    function renderTimeline() {
+      const dayStr = dateStr(viewDate);
+      currentLabelEl.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日`;
+
+      const events = loadEvents().filter(ev => ev.date === dayStr);
+
+      timelineAlldayEl.innerHTML = '';
+      const untimed = events.filter(ev => !ev.time);
+      if (untimed.length === 0) {
+        const hint = document.createElement('div');
+        hint.className = 'muted';
+        hint.textContent = '時刻未定（この日に予定あり）';
+        timelineAlldayEl.appendChild(hint);
+      }
+      untimed.forEach(ev => timelineAlldayEl.appendChild(createEventChip(ev)));
+      addDropHandlers(timelineAlldayEl, (id) => {
+        const evs = loadEvents();
+        const ev = evs.find(e => e.id === id);
+        if (!ev) return;
+        ev.date = dayStr;
+        ev.time = null;
+        saveEvents(evs);
+        renderAll();
+      });
+
+      timelineHoursEl.innerHTML = '';
+      for (let h = 0; h < 24; h++) {
+        const row = document.createElement('div');
+        row.className = 'hour-row';
+
+        const label = document.createElement('div');
+        label.className = 'hour-label';
+        label.textContent = `${pad2(h)}:00`;
+        row.appendChild(label);
+
+        const slot = document.createElement('div');
+        slot.className = 'hour-events';
+        events.filter(ev => ev.time === `${pad2(h)}:00`).forEach(ev => slot.appendChild(createEventChip(ev)));
+        row.appendChild(slot);
+
+        addDropHandlers(row, (id) => {
+          const evs = loadEvents();
+          const ev = evs.find(e => e.id === id);
+          if (!ev) return;
+          ev.date = dayStr;
+          ev.time = `${pad2(h)}:00`;
+          saveEvents(evs);
+          renderAll();
+        });
+
+        timelineHoursEl.appendChild(row);
+      }
+    }
+
+    // ============================================================
+    // ビュー切り替え・日付移動
+    // ============================================================
+    function setView(next) {
+      view = next;
+      document.getElementById('view-month').className = view === 'month' ? '' : 'secondary';
+      document.getElementById('view-timeline').className = view === 'timeline' ? '' : 'secondary';
+      monthViewEl.hidden = view !== 'month';
+      timelineViewEl.hidden = view !== 'timeline';
+      renderAll();
+    }
+
+    document.getElementById('view-month').addEventListener('click', () => setView('month'));
+    document.getElementById('view-timeline').addEventListener('click', () => setView('timeline'));
+
+    document.getElementById('nav-prev').addEventListener('click', () => {
+      if (view === 'month') viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+      else viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate() - 1);
+      renderAll();
+    });
+    document.getElementById('nav-next').addEventListener('click', () => {
+      if (view === 'month') viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+      else viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate() + 1);
+      renderAll();
+    });
+    document.getElementById('nav-today').addEventListener('click', () => {
+      viewDate = new Date();
+      renderAll();
+    });
+
+    // ============================================================
+    // 予定の追加（常にトレイへ：日時はドラッグで割り当てる）
+    // ============================================================
+    document.getElementById('add-event').addEventListener('click', () => {
+      const input = document.getElementById('new-title');
+      const title = input.value.trim();
+      if (!title) return;
+      const events = loadEvents();
+      events.push({
+        id: uid(),
+        title,
+        memo: '',
+        status: 'TENTATIVE',
+        date: null,
+        time: null,
+        createdAt: Date.now(),
+        remindedOn: null,
+      });
+      saveEvents(events);
+      input.value = '';
+      renderAll();
+    });
+    document.getElementById('new-title').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('add-event').click();
+    });
+
+    // ============================================================
+    // 予定の詳細パネル（人がステータスを確定する場所）
+    // ============================================================
+    function openDetail(id) {
+      selectedEventId = id;
+      pendingStatus = null;
+      const ev = loadEvents().find(e => e.id === id);
+      if (!ev) return;
+      document.getElementById('detail-title').value = ev.title;
+      document.getElementById('detail-memo').value = ev.memo || '';
+      highlightStatus(ev.status);
+      detailSection.hidden = false;
+      detailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function highlightStatus(status) {
+      ['tentative', 'confirmed', 'completed'].forEach(s => {
+        document.getElementById(`status-${s}`).className = s.toUpperCase() === status ? '' : 'secondary';
+      });
+    }
+
+    let pendingStatus = null;
+    ['tentative', 'confirmed', 'completed'].forEach(s => {
+      document.getElementById(`status-${s}`).addEventListener('click', () => {
+        pendingStatus = s.toUpperCase();
+        highlightStatus(pendingStatus);
+      });
+    });
+
+    document.getElementById('detail-save').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents();
+      const ev = events.find(e => e.id === selectedEventId);
+      if (!ev) return;
+      ev.title = document.getElementById('detail-title').value.trim() || ev.title;
+      ev.memo = document.getElementById('detail-memo').value;
+      if (pendingStatus) ev.status = pendingStatus;
+      pendingStatus = null;
+      saveEvents(events);
+      closeDetail();
+      renderAll();
+    });
+
+    document.getElementById('detail-clear-date').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents();
+      const ev = events.find(e => e.id === selectedEventId);
+      if (!ev) return;
+      ev.date = null;
+      ev.time = null;
+      saveEvents(events);
+      closeDetail();
+      renderAll();
+    });
+
+    document.getElementById('detail-delete').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents().filter(e => e.id !== selectedEventId);
+      saveEvents(events);
+      closeDetail();
+      renderAll();
+    });
+
+    document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+    function closeDetail() {
+      selectedEventId = null;
+      pendingStatus = null;
+      detailSection.hidden = true;
+    }
+
+    // ============================================================
+    // ローカル通知（未確定のまま指定日数経過した予定を知らせる）
+    // 人が明示的に許可ボタンを押すまで通知は送らない
+    // ============================================================
+    const notifyBtn = document.getElementById('notify-btn');
+
+    function updateNotifyBtn() {
+      if (!('Notification' in window)) {
+        notifyBtn.textContent = '🔕 このブラウザは通知非対応';
+        notifyBtn.disabled = true;
+        return;
+      }
+      notifyBtn.textContent = Notification.permission === 'granted'
+        ? '🔔 通知は有効です'
+        : '🔔 通知を有効にする';
+    }
+
+    notifyBtn.addEventListener('click', () => {
+      if (!('Notification' in window)) return;
+      Notification.requestPermission().then(() => {
+        updateNotifyBtn();
+        checkReminders();
+      });
+    });
+
+    function checkReminders() {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const events = loadEvents();
+      const now = Date.now();
+      const dueMs = REMINDER_DAYS * 24 * 60 * 60 * 1000;
+      const today = todayStr();
+      let changed = false;
+      events.forEach(ev => {
+        if (ev.status !== 'TENTATIVE') return;
+        if (now - ev.createdAt < dueMs) return;
+        if (ev.remindedOn === today) return;
+        try {
+          new Notification('未確定の予定があります', { body: ev.title });
+        } catch { /* 通知生成に失敗しても処理は続行する */ }
+        ev.remindedOn = today;
+        changed = true;
+      });
+      if (changed) saveEvents(events);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkReminders();
+    });
+
+    // ============================================================
+    // 全体描画
+    // ============================================================
+    function renderAll() {
+      renderTray();
+      if (view === 'month') renderMonth();
+      else renderTimeline();
+    }
+
+    updateNotifyBtn();
+    renderAll();
+    checkReminders();
+  </script>
 </body>
+
 </html>
