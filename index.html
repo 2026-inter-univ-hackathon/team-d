@@ -604,6 +604,26 @@
         });
         overlay.appendChild(chip);
       });
+      // 予定チップは hour-row の子要素ではないため、チップの上にドロップされた分は
+      // hour-row 側のドロップ処理まで届かない。オーバーレイ自身にも同じ処理を付けて拾う
+      overlay.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      overlay.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        if (!id) return;
+        const y = e.clientY - timelineHoursEl.getBoundingClientRect().top;
+        const hour = Math.min(23, Math.max(0, Math.floor(y / HOUR_H)));
+        const evs = loadEvents();
+        const ev = evs.find(e2 => e2.id === id);
+        if (!ev) return;
+        ev.date = dayStr;
+        ev.time = `${pad2(hour)}:00`;
+        saveEvents(evs);
+        renderAll();
+      });
       timelineHoursEl.appendChild(overlay);
     }
 
