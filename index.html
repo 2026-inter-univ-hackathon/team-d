@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>未確定予定管理カレンダー</title>
+  <title>助じゅ～る</title>
   <style>
     :root {
       --fg: #1a1a1a;
@@ -298,7 +298,7 @@
 <body>
   <main>
 
-    <h1>未確定予定管理カレンダー</h1>
+    <h1>助じゅ～る</h1>
     <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
     <section>
@@ -533,7 +533,8 @@
     // ============================================================
     function renderTimeline() {
       const dayStr = dateStr(viewDate);
-      currentLabelEl.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日`;
+      const weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
+      currentLabelEl.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日(${weekdayNames[viewDate.getDay()]})`;
 
       const events = loadEvents().filter(ev => ev.date === dayStr);
 
