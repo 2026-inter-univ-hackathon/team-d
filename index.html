@@ -298,7 +298,14 @@
 <body>
   <main>
 
-    <h1>助じゅ～る</h1>
+    <div class="row" style="justify-content:space-between">
+      <h1>助じゅ～る</h1>
+      <form method="post" action="{% url 'logout' %}" class="row">
+        {% csrf_token %}
+        <span>{{ request.user.email }}</span>
+        <button type="submit" class="secondary">ログアウト</button>
+      </form>
+    </div>
     <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
     <section>
