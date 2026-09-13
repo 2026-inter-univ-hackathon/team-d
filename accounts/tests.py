@@ -83,3 +83,17 @@ class AuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("password_too_short", [error.code for error in response.context["form"].errors.as_data()["password2"]])
         self.assertFalse(User.objects.filter(username="alice").exists())
+
+    def test_numeric_and_username_matching_passwords_are_accepted(self):
+        for username, password in [("numeric", "123456"), ("alice12", "alice12")]:
+            with self.subTest(username=username):
+                self.client.logout()
+                response = self.client.post("/signup/", {
+                    "username": username, "password1": password, "password2": password,
+                })
+                self.assertRedirects(response, "/")
+                self.assertTrue(User.objects.get(username=username).check_password(password))
+                self.client.post("/logout/")
+                self.assertRedirects(self.client.post("/login/", {
+                    "username": username, "password": password,
+                }), "/")
