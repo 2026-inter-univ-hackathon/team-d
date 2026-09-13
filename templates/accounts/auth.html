@@ -48,7 +48,7 @@
       {% if signup %}
         <label for="id_password1">パスワード</label>
         <input id="id_password1" name="password1" type="password" required autocomplete="new-password" aria-describedby="password-hint password-errors">
-        <p class="hint" id="password-hint">8文字以上。数字だけや、ユーザー名に似たものは避けてください。</p>
+        <p class="hint" id="password-hint">6文字以上。数字だけや、ユーザー名に似たものは避けてください。</p>
         <div id="password-errors">{{ form.password1.errors }}</div>
         <label for="id_password2">パスワード（確認）</label>
         <input id="id_password2" name="password2" type="password" required autocomplete="new-password" aria-describedby="confirm-errors">

@@ -64,3 +64,22 @@ class AuthTests(TestCase):
         first.post("/logout/", {"csrfmiddlewaretoken": first.cookies["csrftoken"].value})
         self.assertEqual(first.get("/api/events/").status_code, 401)
         self.assertEqual(second.get("/api/events/").status_code, 200)
+
+    def test_common_six_character_password_is_accepted(self):
+        response = self.client.post("/signup/", {
+            "username": "alice", "password1": "abcdef", "password2": "abcdef",
+        })
+        self.assertRedirects(response, "/")
+        self.assertTrue(User.objects.get(username="alice").check_password("abcdef"))
+        self.client.post("/logout/")
+        self.assertRedirects(self.client.post("/login/", {
+            "username": "alice", "password": "abcdef",
+        }), "/")
+
+    def test_five_character_password_is_rejected(self):
+        response = self.client.post("/signup/", {
+            "username": "alice", "password1": "abcde", "password2": "abcde",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("password_too_short", [error.code for error in response.context["form"].errors.as_data()["password2"]])
+        self.assertFalse(User.objects.filter(username="alice").exists())
