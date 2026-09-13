@@ -12,3 +12,12 @@
 node_modules/
 *.log
 仕様書.md
+
+# Django / Python
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.sqlite3-*
+staticfiles/
