@@ -74,3 +74,22 @@ class EventTests(TestCase):
         client.get("/")
         csrf = client.cookies["csrftoken"].value
         self.assertEqual(client.post("/api/events/", data='{"title":"予定"}', content_type="application/json", HTTP_X_CSRFTOKEN=csrf).status_code, 201)
+
+    def test_import_preserves_fields_and_is_idempotent_per_user(self):
+        record = {"id": "ev_old", "title": "以前の予定", "createdAt": 1700000000000,
+                  "status": "COMPLETED", "date": "2026-09-14", "time": "12:00", "duration": 2, "memo": "メモ"}
+        response = self.send("post", "/api/events/import/", {"events": [record]})
+        self.assertEqual(response.json(), {"imported": 1, "skipped": 0})
+        saved = Event.objects.get(user=self.alice, legacy_id="ev_old").as_dict()
+        self.assertEqual(saved["createdAt"], 1700000000000)
+        self.assertEqual(saved["status"], "COMPLETED")
+        self.assertEqual(saved["duration"], 2)
+        self.assertEqual(self.send("post", "/api/events/import/", {"events": [record]}).json(), {"imported": 0, "skipped": 1})
+        self.client.force_login(self.bob)
+        self.assertEqual(self.send("post", "/api/events/import/", {"events": [record]}).json()["imported"], 1)
+
+    def test_import_rolls_back_entire_file_on_invalid_record(self):
+        records = [{"id": "good", "title": "正常"}, {"id": "bad", "title": "不正", "duration": 0}]
+        self.assertEqual(self.send("post", "/api/events/import/", {"events": records}).status_code, 400)
+        self.assertFalse(Event.objects.filter(legacy_id="good").exists())
+        self.assertEqual(self.send("post", "/api/events/import/", {"events": [{"id": "injected", "title": "a", "user": self.bob.pk}]}).status_code, 400)

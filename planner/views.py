@@ -125,3 +125,38 @@ def event_detail(request, event_id):
         raise ApiError("別の画面で変更されています。最新の予定を読み直してください。", 409)
     event.version = version + 1
     return JsonResponse({"event": event.as_dict()})
+
+
+@api
+@require_http_methods(["POST"])
+@transaction.atomic
+def import_events(request):
+    from datetime import datetime, timezone as datetime_timezone
+    import math
+
+    payload = body(request)
+    records = payload.get("events")
+    if set(payload) != {"events"} or not isinstance(records, list) or len(records) > 1000:
+        raise ApiError("予定の配列を指定してください。1回に取り込めるのは1000件までです。")
+    imported = skipped = 0
+    for record in records:
+        if not isinstance(record, dict) or set(record) - {
+            "id", "title", "memo", "status", "date", "time", "duration", "createdAt", "remindedOn"
+        }:
+            raise ApiError("予定ファイルの形式が正しくありません。")
+        legacy_id = record.get("id")
+        if not isinstance(legacy_id, str) or not 1 <= len(legacy_id) <= 100:
+            raise ApiError("各予定には元のIDが必要です。")
+        if Event.objects.filter(user=request.user, legacy_id=legacy_id).exists():
+            skipped += 1
+            continue
+        event = Event(user=request.user, legacy_id=legacy_id)
+        timestamp = record.get("createdAt")
+        if timestamp is not None:
+            if type(timestamp) not in (int, float) or not math.isfinite(timestamp) or not 0 <= timestamp < 253402300799000:
+                raise ApiError("予定の作成日時が正しくありません。")
+            event.created_at = datetime.fromtimestamp(timestamp / 1000, tz=datetime_timezone.utc)
+        apply_fields(event, {key: value for key, value in record.items() if key not in {"id", "createdAt"}})
+        event.save()
+        imported += 1
+    return JsonResponse({"imported": imported, "skipped": skipped})
