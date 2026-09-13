@@ -38,3 +38,29 @@ class AuthTests(TestCase):
         self.assertEqual(client.post("/login/", {}).status_code, 403)
         client.force_login(User.objects.create_user(username="alice", password=self.password))
         self.assertEqual(client.post("/logout/").status_code, 403)
+
+    def test_complete_flow_with_csrf_and_two_browser_sessions(self):
+        first = Client(enforce_csrf_checks=True)
+        first.get("/signup/")
+        csrf = first.cookies["csrftoken"].value
+        response = first.post("/signup/", {
+            "username": "sharedlogin", "password1": self.password, "password2": self.password,
+            "csrfmiddlewaretoken": csrf,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertContains(first.get("/"), "sharedlogin@example.com")
+        response = first.post("/api/events/", data='{"title":"別のブラウザからも見える予定"}',
+                              content_type="application/json", HTTP_X_CSRFTOKEN=first.cookies["csrftoken"].value)
+        self.assertEqual(response.status_code, 201)
+        event_id = response.json()["event"]["id"]
+        second = Client(enforce_csrf_checks=True)
+        second.get("/login/")
+        response = second.post("/login/", {
+            "username": "sharedlogin", "password": self.password,
+            "csrfmiddlewaretoken": second.cookies["csrftoken"].value,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(second.get("/api/events/").json()["events"][0]["id"], event_id)
+        first.post("/logout/", {"csrfmiddlewaretoken": first.cookies["csrftoken"].value})
+        self.assertEqual(first.get("/api/events/").status_code, 401)
+        self.assertEqual(second.get("/api/events/").status_code, 200)

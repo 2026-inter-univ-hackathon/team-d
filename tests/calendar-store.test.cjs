@@ -68,3 +68,12 @@ test('concurrent saves are rejected so rapid clicks cannot overwrite pending dat
   await saving;
   assert.equal(store.load()[0].title, '変更');
 });
+
+test('calendar inline script parses after async API conversion', () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const path = require('node:path');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.doesNotThrow(() => new vm.Script(script));
+});
