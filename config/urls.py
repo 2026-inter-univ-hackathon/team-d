@@ -1,3 +1,4 @@
 from django.urls import path
+from .views import calendar
 
-urlpatterns = []
+urlpatterns = [path("", calendar, name="calendar")]
