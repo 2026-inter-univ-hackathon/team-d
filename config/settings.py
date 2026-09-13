@@ -12,7 +12,7 @@ if not DEBUG and SECRET_KEY in {"django-insecure-local-demo-only", "replace-with
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY before disabling DEBUG.")
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 INSTALLED_APPS = [
-    "django.contrib.auth", "django.contrib.contenttypes",
+    "accounts", "planner", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
 ]
 MIDDLEWARE = [
@@ -56,3 +56,5 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+
+AUTH_USER_MODEL = "accounts.User"
