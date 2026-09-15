@@ -27,7 +27,7 @@ Python 3.12以上を準備してください（開発・確認環境は3.14）�
 
 Macの設定でダブルクリック実行できない場合は、ターミナルでプロジェクトへ移動し `bash start.command` を実行してください。ポート8000が使用中の場合は、既存の開発サーバーを終了するか、下記の手動起動で別のポートを指定してください。
 
-## ターミナルで起動する
+## Mac・Linuxのターミナルで起動する
 
 リポジトリのルート（`manage.py` があるフォルダ）で実行します。
 
@@ -40,9 +40,64 @@ python manage.py runserver
 ```
 
 ブラウザで `http://127.0.0.1:8000/` を開きます。別のポートを使う場合は `python manage.py runserver 8001` です。
-Windowsでは `py -m venv .venv`、PowerShellで `.venv\Scripts\Activate.ps1` を使ってください。
 
 設定を変える場合は `.env.example` を `.env` にコピーして編集します。`start.command` は `.env` がない場合、ローカル用のランダムな秘密鍵を含む `.env` を作ります。
+
+## Windowsで起動する（PowerShell）
+
+### 初回の準備
+
+Python 3.12以上を用意してください（開発・確認環境は3.14）。未インストールの場合は[Python公式サイト](https://www.python.org/downloads/windows/)から導入し、PowerShellを開き直します。
+
+エクスプローラーでリポジトリのフォルダを開き、アドレスバーに `powershell` と入力してEnterを押します。`manage.py` と `requirements.txt` があるフォルダで、以下を1行ずつ実行してください。エラーが出た場合は、その行を解決してから次へ進みます。
+
+```powershell
+py --version
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver
+```
+
+`py --version` で3.12以上と表示されることを確認してください。`py` が見つからず `python --version` は動く場合は、先頭2行の `py` を `python` に置き換えます。
+
+`Starting development server at http://127.0.0.1:8000/` と表示されたら、ブラウザで **http://127.0.0.1:8000/** を開きます。起動中はPowerShellを開いたままにしてください。
+
+「新規登録」でユーザー名（例: `alice`）と6文字以上のパスワードを入力します。`@example.com` は画面に固定表示されるため、入力不要です。SQLiteのDBは自動で作られ、Dockerや別のDBソフトの準備は不要です。
+
+この手順では仮想環境内の `python.exe` を直接指定するため、`Activate.ps1` の実行やPowerShellの実行ポリシー変更は不要です。[Python公式の仮想環境の説明](https://docs.python.org/3/library/venv.html#how-venvs-work)
+
+### 2回目以降の起動・終了
+
+同じフォルダでPowerShellを開き、次を実行します。
+
+```powershell
+.\.venv\Scripts\python.exe manage.py runserver
+```
+
+終了は **Ctrl+C** です。再起動する場合は、停止後に同じコマンドを実行します。停止しても登録済みのアカウント・予定は `db.sqlite3` に残ります。
+
+Gitから更新を取得し、依存ライブラリやDBの構造が変更された場合は、サーバーを停止してから以下を実行し、再起動してください。
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver
+```
+
+### よくある問題
+
+| 状況 | 対応 |
+|---|---|
+| `manage.py` や `requirements.txt` が見つからない | `Get-Location` と `Get-ChildItem` で現在地を確認し、両方のファイルがあるフォルダへ移動してください。 |
+| `.venv\Scripts\python.exe` が見つからない | Windows上で `py -m venv .venv` を実行してください。Macの `.venv` をコピーして使うことはできません。 |
+| `No module named django` | `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` を実行してください。 |
+| `no such table` | サーバーを停止し、`.\.venv\Scripts\python.exe manage.py migrate` を実行してください。 |
+| ポート8000が使用中 | `.\.venv\Scripts\python.exe manage.py runserver 8001` で起動し、`http://127.0.0.1:8001/` を開いてください。 |
+| `start.command` が開けない | `start.command` はMac用です。Windowsでは上記のPowerShell手順を使います。 |
+
+`index.html` のダブルクリックではなく、起動したDjangoのURLをブラウザで開いてください。
+この手順は既存コードとPython公式資料に基づいて記載しており、Windows実機での起動確認は未実施です。
 
 ## 予定の使い方
 
