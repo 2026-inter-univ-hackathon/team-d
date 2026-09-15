@@ -7,6 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
+from login.authentication import session_or_token
 from .models import Event
 
 
@@ -27,7 +28,7 @@ def api(view):
             return JsonResponse({"error": error.message}, status=error.status)
         except ValidationError as error:
             return JsonResponse({"error": " / ".join(error.messages)}, status=400)
-    return wrapped
+    return session_or_token(wrapped)
 
 
 def body(request):
