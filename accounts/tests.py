@@ -97,3 +97,75 @@ class AuthTests(TestCase):
                 self.assertRedirects(self.client.post("/login/", {
                     "username": username, "password": password,
                 }), "/")
+
+
+class LoginTokenTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="tokenuser", password="123456")
+
+    def test_issue_resolves_owner_and_stores_only_hash(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from .models import LoginToken
+
+        before = timezone.now()
+        raw, token = LoginToken.issue(self.user)
+        after = timezone.now()
+        self.assertEqual(LoginToken.resolve(raw).user_id, self.user.pk)
+        self.assertEqual(len(raw), 43)
+        stored = LoginToken.objects.values().get(pk=token.pk)
+        self.assertNotIn(raw, stored.values())
+        self.assertEqual(len(stored["token_hash"]), 64)
+        self.assertGreaterEqual(token.expires_at, before + timedelta(hours=8))
+        self.assertLessEqual(token.expires_at, after + timedelta(hours=8))
+
+    def test_expired_token_and_exact_expiry_are_rejected(self):
+        from datetime import timedelta
+        from unittest.mock import patch
+        from django.utils import timezone
+        from .models import LoginToken
+
+        raw, token = LoginToken.issue(self.user)
+        now = timezone.now()
+        for expiry in [now, now - timedelta(seconds=1)]:
+            with self.subTest(expiry=expiry):
+                LoginToken.objects.filter(pk=token.pk).update(expires_at=expiry)
+                with patch("accounts.models.timezone.now", return_value=now):
+                    self.assertIsNone(LoginToken.resolve(raw))
+
+    def test_unknown_and_malformed_tokens_are_rejected(self):
+        from .models import LoginToken
+
+        for raw in [None, 123, b"a" * 43, "", "short", "x" * 43, "x" * 44]:
+            with self.subTest(raw=raw):
+                self.assertIsNone(LoginToken.resolve(raw))
+
+    def test_revoke_does_not_affect_other_session(self):
+        from .models import LoginToken
+
+        first_raw, first = LoginToken.issue(self.user)
+        second_raw, second = LoginToken.issue(self.user)
+        self.assertNotEqual(first_raw, second_raw)
+        first.revoke()
+        self.assertIsNone(LoginToken.resolve(first_raw))
+        self.assertEqual(LoginToken.resolve(second_raw).pk, second.pk)
+
+    def test_deactivated_user_cannot_issue_or_use_token(self):
+        from .models import LoginToken
+
+        raw, _ = LoginToken.issue(self.user)
+        self.user.is_active = False
+        self.user.save()
+        self.assertIsNone(LoginToken.resolve(raw))
+        with self.assertRaises(ValueError):
+            LoginToken.issue(self.user)
+        self.assertEqual(LoginToken.objects.count(), 1)
+
+    def test_deleting_user_removes_tokens(self):
+        from .models import LoginToken
+
+        raw, _ = LoginToken.issue(self.user)
+        self.user.delete()
+        self.assertIsNone(LoginToken.resolve(raw))
+        self.assertEqual(LoginToken.objects.count(), 0)
