@@ -298,9 +298,29 @@
 <body>
   <main>
 
-    <h1>助じゅ～る</h1>
+    <div class="row" style="justify-content:space-between">
+      <h1>助じゅ～る</h1>
+      <form method="post" action="{% url 'logout' %}" class="row">
+        {% csrf_token %}
+        <span>{{ request.user.email }}</span>
+        <button type="submit" class="secondary">ログアウト</button>
+      </form>
+    </div>
     <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
+    <div class="row" style="margin-bottom:16px">
+      <p id="sync-message" role="status" aria-live="polite" style="flex:1">予定を読み込んでいます…</p>
+      <button id="reload-events" type="button" class="secondary">予定を再読み込み</button>
+    </div>
+    <details style="margin-bottom:16px" id="import-panel">
+      <summary>以前の予定を取り込む</summary>
+      <p>以前のブラウザで index.html を直接開き、書き出したJSONを選んでください。このアカウントに追加します。</p>
+      <label for="import-file">予定のJSONファイル（1MB・1000件以内）</label>
+      <input id="import-file" type="file" accept=".json,application/json">
+      <p id="import-preview" role="status"></p>
+      <button id="import-submit" type="button" disabled>このアカウントに取り込む</button>
+    </details>
+    <div id="calendar-content" hidden>
     <section>
       <div class="toolbar">
         <div class="row">
@@ -320,7 +340,7 @@
     <section>
       <h2>未確定トレイ（日時未定の予定）</h2>
       <div class="row">
-        <input id="new-title" type="text" placeholder="予定のタイトル" style="flex:1">
+        <input id="new-title" type="text" maxlength="200" aria-label="予定のタイトル" placeholder="予定のタイトル" style="flex:1">
         <button id="add-event">トレイに追加</button>
       </div>
       <p class="muted">ここに追加した予定は、下のカレンダー／タイムラインへドラッグして日時を割り当ててください。</p>
@@ -343,11 +363,11 @@
        ============================================================ -->
     <section id="detail-section" hidden>
       <h2>予定の詳細</h2>
-      <label>タイトル</label>
-      <input id="detail-title" type="text">
-      <label>メモ</label>
-      <textarea id="detail-memo" rows="2"></textarea>
-      <label>所要時間（時間）</label>
+      <label for="detail-title">タイトル</label>
+      <input id="detail-title" type="text" maxlength="200">
+      <label for="detail-memo">メモ</label>
+      <textarea id="detail-memo" rows="2" maxlength="10000"></textarea>
+      <label for="detail-duration">所要時間（時間）</label>
       <input id="detail-duration" type="number" min="1" max="24" step="1" style="width:6em">
       <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
       <label>ステータス（人が決める）</label>
@@ -364,28 +384,138 @@
       </div>
     </section>
 
+    </div>
   </main>
 
+  <script src="static/legacy-export.js"></script>
+  <script src="static/calendar-store.js"></script>
   <script>
+    if (window.location.protocol !== 'file:') {
     // ============================================================
-    // データの保存と読み込み（localStorage）
+    // データの保存と読み込み（Django API）
     // ============================================================
-    const STORAGE_KEY = 'tentative_calendar_events';
-    const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
-    const HOUR_H = 32; // タイムラインの1時間あたりの高さ(px)。CSSの .hour-row の height と合わせる
+    const REMINDER_DAYS = 3;
+    const HOUR_H = 32;
+    const syncMessage = document.getElementById('sync-message');
+    const calendarContent = document.getElementById('calendar-content');
+    const reloadButton = document.getElementById('reload-events');
+    let loading = false;
 
-    function loadEvents() {
+    async function apiRequest(url, method = 'GET', data) {
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      let response;
       try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        return Array.isArray(data) ? data : [];
+        response = await fetch(url, {
+          method, credentials: 'same-origin', cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: data === undefined ? undefined : JSON.stringify(data),
+          signal: AbortSignal.timeout(15000),
+        });
       } catch {
-        return [];
+        throw new Error('通信できませんでした。接続を確認し、予定を再読み込みしてください。');
+      }
+      if (response.status === 401) {
+        window.location.assign('/login/');
+        throw new Error('ログインし直してください。');
+      }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || '処理できませんでした。画面を再読み込みしてください。');
+      return result;
+    }
+
+    const store = new CalendarStore(apiRequest);
+    function loadEvents() { return store.load(); }
+    function setSync(message, error = false) {
+      syncMessage.textContent = message;
+      syncMessage.style.color = error ? '#a32626' : '#555';
+    }
+    function lockCalendar(locked) {
+      calendarContent.inert = locked;
+      calendarContent.setAttribute('aria-busy', String(locked));
+      reloadButton.disabled = locked;
+      document.getElementById('import-panel').inert = locked;
+    }
+    async function saveEvents(events) {
+      if (store.busy || loading || !store.ready) return false;
+      lockCalendar(true);
+      setSync('保存しています…');
+      try {
+        await store.save(events);
+        setSync('保存しました。');
+        return true;
+      } catch (error) {
+        setSync(error.message, true);
+        renderAll();
+        return false;
+      } finally {
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
       }
     }
-
-    function saveEvents(events) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    async function refreshEvents() {
+      if (store.busy || loading) return;
+      loading = true;
+      lockCalendar(true);
+      setSync('予定を読み込んでいます…');
+      try {
+        await store.refresh();
+        closeDetail();
+        renderAll();
+        calendarContent.hidden = false;
+        setSync('予定を読み込みました。');
+      } catch (error) {
+        store.ready = false;
+        setSync(error.message, true);
+      } finally {
+        loading = false;
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
+      }
     }
+    reloadButton.addEventListener('click', refreshEvents);
+    let importRecords = null;
+    const importFile = document.getElementById('import-file');
+    const importPreview = document.getElementById('import-preview');
+    const importSubmit = document.getElementById('import-submit');
+    importFile.addEventListener('change', async () => {
+      importRecords = null;
+      importSubmit.disabled = true;
+      const file = importFile.files[0];
+      if (!file) { importPreview.textContent = ''; return; }
+      try {
+        if (file.size > 1024 * 1024) throw new Error('1MB以内のJSONファイルを選んでください。');
+        const records = JSON.parse(await file.text());
+        if (!Array.isArray(records) || records.length > 1000) throw new Error('予定の配列（1000件以内）を選んでください。');
+        importRecords = records;
+        importPreview.textContent = `${records.length}件の予定を追加します。同じIDの取り込み済み予定はスキップします。`;
+        importSubmit.disabled = !records.length;
+      } catch (error) { importPreview.textContent = error.message; }
+    });
+    importSubmit.addEventListener('click', async () => {
+      if (!importRecords || store.busy || loading) return;
+      loading = true;
+      lockCalendar(true);
+      setSync('予定を取り込んでいます…');
+      try {
+        const result = await apiRequest('/api/events/import/', 'POST', { events: importRecords });
+        await store.refresh();
+        renderAll();
+        calendarContent.hidden = false;
+        setSync(`${result.imported}件を取り込みました。${result.skipped}件は取り込み済みです。`);
+        importRecords = null;
+        importSubmit.disabled = true;
+        importFile.value = '';
+        importPreview.textContent = '';
+      } catch (error) {
+        store.ready = false;
+        try { await store.refresh(); renderAll(); } catch { /* Explicit reload remains available. */ }
+        setSync(error.message, true);
+      } finally {
+        loading = false;
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
+      }
+    });
 
     function uid() {
       return 'ev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -438,18 +568,18 @@
     }
 
     function addDropHandlers(el, onDrop) {
-      el.addEventListener('dragover', (e) => {
+      el.ondragover = (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         el.classList.add('drag-over');
-      });
-      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
-      el.addEventListener('drop', (e) => {
+      };
+      el.ondragleave = () => el.classList.remove('drag-over');
+      el.ondrop = (e) => {
         e.preventDefault();
         el.classList.remove('drag-over');
         const id = e.dataTransfer.getData('text/plain');
-        if (id) onDrop(id);
-      });
+        if (id && store.ready && !store.busy && !loading) onDrop(id);
+      };
     }
 //
     // ============================================================
@@ -468,13 +598,13 @@
       untimed.forEach(ev => trayEl.appendChild(createEventChip(ev)));
     }
 
-    addDropHandlers(trayEl, (id) => {
+    addDropHandlers(trayEl, async (id) => {
       const events = loadEvents();
       const ev = events.find(e => e.id === id);
       if (!ev) return;
       ev.date = null;
       ev.time = null;
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       renderAll();
     });
 
@@ -515,12 +645,12 @@
 
         events.filter(ev => ev.date === cellStr).forEach(ev => cell.appendChild(createEventChip(ev)));
 
-        addDropHandlers(cell, (id) => {
+        addDropHandlers(cell, async (id) => {
           const evs = loadEvents();
           const ev = evs.find(e => e.id === id);
           if (!ev) return;
           ev.date = cellStr; // 月表示では時刻は付けない
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -547,13 +677,13 @@
         timelineAlldayEl.appendChild(hint);
       }
       untimed.forEach(ev => timelineAlldayEl.appendChild(createEventChip(ev)));
-      addDropHandlers(timelineAlldayEl, (id) => {
+      addDropHandlers(timelineAlldayEl, async (id) => {
         const evs = loadEvents();
         const ev = evs.find(e => e.id === id);
         if (!ev) return;
         ev.date = dayStr;
         ev.time = null;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
       });
 
@@ -572,13 +702,13 @@
         slot.className = 'hour-events';
         row.appendChild(slot);
 
-        addDropHandlers(row, (id) => {
+        addDropHandlers(row, async (id) => {
           const evs = loadEvents();
           const ev = evs.find(e => e.id === id);
           if (!ev) return;
           ev.date = dayStr;
           ev.time = `${pad2(h)}:00`;
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -611,7 +741,7 @@
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
       });
-      overlay.addEventListener('drop', (e) => {
+      overlay.addEventListener('drop', async (e) => {
         e.preventDefault();
         const id = e.dataTransfer.getData('text/plain');
         if (!id) return;
@@ -622,7 +752,7 @@
         if (!ev) return;
         ev.date = dayStr;
         ev.time = `${pad2(hour)}:00`;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
       });
       timelineHoursEl.appendChild(overlay);
@@ -684,12 +814,12 @@
         finalDuration = Math.min(maxDuration, Math.max(1, startDuration + deltaHours));
         chipEl.style.height = (finalDuration * HOUR_H - 2) + 'px';
       }
-      function onUp() {
+      async function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         if (finalDuration !== startDuration) {
           ev.duration = finalDuration;
-          saveEvents(events);
+          if (!await saveEvents(events)) return;
         }
         renderAll();
       }
@@ -730,7 +860,7 @@
     // ============================================================
     // 予定の追加（常にトレイへ：日時はドラッグで割り当てる）
     // ============================================================
-    document.getElementById('add-event').addEventListener('click', () => {
+    document.getElementById('add-event').addEventListener('click', async () => {
       const input = document.getElementById('new-title');
       const title = input.value.trim();
       if (!title) return;
@@ -746,7 +876,7 @@
         createdAt: Date.now(),
         remindedOn: null,
       });
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       input.value = '';
       renderAll();
     });
@@ -784,7 +914,7 @@
       });
     });
 
-    document.getElementById('detail-save').addEventListener('click', () => {
+    document.getElementById('detail-save').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
@@ -794,28 +924,28 @@
       const durationInput = parseInt(document.getElementById('detail-duration').value, 10);
       ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
       if (pendingStatus) ev.status = pendingStatus;
+      if (!await saveEvents(events)) return;
       pendingStatus = null;
-      saveEvents(events);
       closeDetail();
       renderAll();
     });
 
-    document.getElementById('detail-clear-date').addEventListener('click', () => {
+    document.getElementById('detail-clear-date').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
       if (!ev) return;
       ev.date = null;
       ev.time = null;
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       closeDetail();
       renderAll();
     });
 
-    document.getElementById('detail-delete').addEventListener('click', () => {
+    document.getElementById('detail-delete').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents().filter(e => e.id !== selectedEventId);
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       closeDetail();
       renderAll();
     });
@@ -853,7 +983,8 @@
       });
     });
 
-    function checkReminders() {
+    async function checkReminders() {
+      if (!store.ready || store.busy || loading) return;
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       const events = loadEvents();
       const now = Date.now();
@@ -870,11 +1001,13 @@
         ev.remindedOn = today;
         changed = true;
       });
-      if (changed) saveEvents(events);
+      if (changed) await saveEvents(events);
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkReminders();
+      if (document.visibilityState === 'visible' && !selectedEventId) {
+        refreshEvents().then(checkReminders);
+      }
     });
 
     // ============================================================
@@ -887,8 +1020,9 @@
     }
 
     updateNotifyBtn();
-    renderAll();
-    checkReminders();
+    refreshEvents().then(checkReminders);
+    window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
+    }
   </script>
 </body>
 
