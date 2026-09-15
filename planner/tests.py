@@ -1,6 +1,6 @@
 import json
 from django.test import Client, TestCase
-from accounts.models import User
+from login.models import User
 from .models import Event
 
 

@@ -131,7 +131,7 @@ class LoginTokenTests(TestCase):
         for expiry in [now, now - timedelta(seconds=1)]:
             with self.subTest(expiry=expiry):
                 LoginToken.objects.filter(pk=token.pk).update(expires_at=expiry)
-                with patch("accounts.models.timezone.now", return_value=now):
+                with patch("login.models.timezone.now", return_value=now):
                     self.assertIsNone(LoginToken.resolve(raw))
 
     def test_unknown_and_malformed_tokens_are_rejected(self):

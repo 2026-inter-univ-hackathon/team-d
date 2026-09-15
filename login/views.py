@@ -21,7 +21,7 @@ def signup(request):
         else:
             login(request, user)
             return redirect("calendar")
-    return render(request, "accounts/auth.html", {"form": form, "signup": True})
+    return render(request, "login/auth.html", {"form": form, "signup": True})
 
 
 @never_cache
@@ -33,7 +33,7 @@ def sign_in(request):
     if request.method == "POST" and form.is_valid():
         login(request, form.get_user())
         return redirect("calendar")
-    return render(request, "accounts/auth.html", {"form": form, "signup": False})
+    return render(request, "login/auth.html", {"form": form, "signup": False})
 
 
 @never_cache

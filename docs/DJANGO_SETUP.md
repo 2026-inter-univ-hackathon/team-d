@@ -93,9 +93,9 @@ Node.jsはフロントの保存処理のテストにだけ使用します（Node
 |---|---|
 | `index.html` | カレンダー画面と操作処理 |
 | `static/calendar-store.js` | API経由の保存・読み込み・失敗時の再同期 |
-| `accounts/` | ユーザーモデル・登録・ログイン・ログアウト |
+| `login/` | ユーザーモデル・登録・ログイン・ログアウト |
 | `planner/` | 予定モデル・本人専用の予定API・JSON取り込み |
-| `templates/accounts/auth.html` | 新規登録・ログイン画面 |
+| `login/templates/login/auth.html` | 新規登録・ログイン画面 |
 | `config/settings.py` | Django・SQLiteの設定 |
 | `*/migrations/` | DBの構造を作成・更新する手順 |
 | `start.command` | Mac用起動ファイル |
