@@ -4,8 +4,9 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
+from .authentication import token_required
 from .forms import LoginForm, SignupForm
 from .models import LoginToken
 
@@ -129,3 +130,29 @@ def signup(request):
         },
         status=201,
     )
+
+
+@never_cache
+@require_GET
+@token_required
+def me(request):
+    """トークンに対応するユーザー情報を返す。"""
+    return JsonResponse({
+        "user": {
+            "id": request.user.pk,
+            "email": request.user.email,
+        },
+    })
+
+
+@csrf_exempt
+@never_cache
+@require_POST
+@token_required
+def sign_out(request):
+    """このリクエストで使ったトークンだけを無効化する。"""
+    request.login_token.revoke()
+
+    return JsonResponse({
+        "message": "ログアウトしました。",
+    })

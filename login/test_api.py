@@ -153,3 +153,89 @@ class SignupApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(self.client.session["_auth_user_id"], str(other.pk))
         self.assertEqual(LoginToken.resolve(response.json()["token"]).user.username, "alice")
+
+
+class TokenSessionApiTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="alice", password="123456")
+        cls.other = User.objects.create_user(username="bob", password="654321")
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.raw, self.token = LoginToken.issue(self.user)
+        self.header = {"HTTP_AUTHORIZATION": f"Bearer {self.raw}"}
+
+    def test_me_returns_only_token_owner_information(self):
+        response = self.client.get("/api/auth/me/", **self.header)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"user": {"id": self.user.pk, "email": "alice@example.com"}})
+        self.assertIn("no-store", response.headers["Cache-Control"])
+        self.assertEqual(self.client.get("/api/auth/me/", HTTP_AUTHORIZATION=f"bearer {self.raw}").status_code, 200)
+
+    def test_missing_malformed_and_unknown_tokens_are_rejected(self):
+        for authorization in ["", "Bearer", "Basic abc", "Bearer short", "Bearer " + "x" * 43,
+                              f"Bearer {self.raw} extra"]:
+            with self.subTest(authorization=authorization):
+                for method, url in [("get", "/api/auth/me/"), ("post", "/api/auth/logout/")]:
+                    response = getattr(self.client, method)(url, HTTP_AUTHORIZATION=authorization)
+                    self.assertEqual(response.status_code, 401)
+                    self.assertIn("error", response.json())
+                    self.assertIn("no-store", response.headers["Cache-Control"])
+        self.assertIsNotNone(LoginToken.resolve(self.raw))
+
+    def test_expired_and_inactive_tokens_are_rejected(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        LoginToken.objects.filter(pk=self.token.pk).update(expires_at=timezone.now() - timedelta(seconds=1))
+        self.assertEqual(self.client.get("/api/auth/me/", **self.header).status_code, 401)
+        self.assertEqual(self.client.post("/api/auth/logout/", **self.header).status_code, 401)
+        raw, _ = LoginToken.issue(self.user)
+        self.user.is_active = False
+        self.user.save()
+        self.assertEqual(self.client.get("/api/auth/me/", HTTP_AUTHORIZATION=f"Bearer {raw}").status_code, 401)
+        self.assertEqual(self.client.post("/api/auth/logout/", HTTP_AUTHORIZATION=f"Bearer {raw}").status_code, 401)
+
+    def test_logout_revokes_only_supplied_token(self):
+        second_raw, _ = LoginToken.issue(self.user)
+        other_raw, _ = LoginToken.issue(self.other)
+        response = self.client.post("/api/auth/logout/", **self.header)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "ログアウトしました。"})
+        self.assertIn("no-store", response.headers["Cache-Control"])
+        self.assertIsNone(LoginToken.resolve(self.raw))
+        self.assertEqual(self.client.get("/api/auth/me/", **self.header).status_code, 401)
+        self.assertEqual(self.client.post("/api/auth/logout/", **self.header).status_code, 401)
+        for raw in [second_raw, other_raw]:
+            self.assertEqual(self.client.get("/api/auth/me/", HTTP_AUTHORIZATION=f"Bearer {raw}").status_code, 200)
+
+    def test_cookie_session_is_not_a_substitute_and_is_preserved(self):
+        self.client.force_login(self.other)
+        session_key = self.client.session.session_key
+        self.assertEqual(self.client.get("/api/auth/me/").status_code, 401)
+        self.assertEqual(self.client.post("/api/auth/logout/").status_code, 401)
+        response = self.client.get("/api/auth/me/", **self.header)
+        self.assertEqual(response.json()["user"]["id"], self.user.pk)
+        self.assertEqual(self.client.post("/api/auth/logout/", **self.header).status_code, 200)
+        self.assertEqual(self.client.session.session_key, session_key)
+        self.assertEqual(self.client.session["_auth_user_id"], str(self.other.pk))
+        self.assertContains(self.client.get("/"), "bob@example.com")
+
+    def test_method_restrictions_do_not_revoke_token(self):
+        self.client.get("/")
+        self.client.get("/login/")
+        csrf = self.client.cookies["csrftoken"].value
+        self.assertEqual(self.client.post("/api/auth/me/", HTTP_X_CSRFTOKEN=csrf, **self.header).status_code, 405)
+        self.assertEqual(self.client.get("/api/auth/logout/", **self.header).status_code, 405)
+        self.assertIsNotNone(LoginToken.resolve(self.raw))
+
+    def test_login_to_logout_complete_flow(self):
+        response = self.client.post("/api/auth/login/", data=json.dumps({
+            "username": "alice", "password": "123456",
+        }), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        header = {"HTTP_AUTHORIZATION": f'Bearer {response.json()["token"]}'}
+        self.assertEqual(self.client.get("/api/auth/me/", **header).status_code, 200)
+        self.assertEqual(self.client.post("/api/auth/logout/", **header).status_code, 200)
+        self.assertEqual(self.client.get("/api/auth/me/", **header).status_code, 401)
