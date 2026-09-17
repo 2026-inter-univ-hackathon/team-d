@@ -12,11 +12,12 @@ if not DEBUG and SECRET_KEY in {"django-insecure-local-demo-only", "replace-with
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY before disabling DEBUG.")
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 INSTALLED_APPS = [
-    "login.apps.LoginConfig", "planner", "django.contrib.auth", "django.contrib.contenttypes",
+    "login.apps.LoginConfig", "planner", "corsheaders", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -59,3 +60,11 @@ AUTH_USER_MODEL = "accounts.User"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+CORS_URLS_REGEX = r"^/api/"
+CORS_ALLOW_CREDENTIALS = False
