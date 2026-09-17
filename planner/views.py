@@ -6,8 +6,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from login.authentication import session_or_token
+from login.authentication import token_required
 from .models import Event
 
 
@@ -17,18 +18,15 @@ class ApiError(Exception):
 
 
 def api(view):
-    @never_cache
     @wraps(view)
     def wrapped(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({"error": "ログインし直してください。"}, status=401)
         try:
             return view(request, *args, **kwargs)
         except ApiError as error:
             return JsonResponse({"error": error.message}, status=error.status)
         except ValidationError as error:
             return JsonResponse({"error": " / ".join(error.messages)}, status=400)
-    return session_or_token(wrapped)
+    return csrf_exempt(never_cache(token_required(wrapped)))
 
 
 def body(request):

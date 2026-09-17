@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase, Client
 from .models import User
 
@@ -51,31 +53,31 @@ class AuthTests(TestCase):
                 self.assertContains(response, 'login/api.js')
                 self.assertContains(response, 'login/auth.js')
 
-    def test_complete_flow_with_csrf_and_two_browser_sessions(self):
+    def test_complete_flow_with_two_token_sessions(self):
         first = Client(enforce_csrf_checks=True)
-        first.get("/signup/")
-        csrf = first.cookies["csrftoken"].value
-        response = first.post("/signup/", {
+        response = first.post("/api/auth/signup/", data=json.dumps({
             "username": "sharedlogin", "password1": self.password, "password2": self.password,
-            "csrfmiddlewaretoken": csrf,
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertContains(first.get("/"), 'id="current-user"')
-        response = first.post("/api/events/", data='{"title":"別のブラウザからも見える予定"}',
-                              content_type="application/json", HTTP_X_CSRFTOKEN=first.cookies["csrftoken"].value)
+        }), content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        first_header = {"HTTP_AUTHORIZATION": f'Bearer {response.json()["token"]}'}
+        response = first.post(
+            "/api/events/", data='{"title":"別のブラウザからも見える予定"}',
+            content_type="application/json", **first_header,
+        )
         self.assertEqual(response.status_code, 201)
         event_id = response.json()["event"]["id"]
+
         second = Client(enforce_csrf_checks=True)
-        second.get("/login/")
-        response = second.post("/login/", {
+        response = second.post("/api/auth/login/", data=json.dumps({
             "username": "sharedlogin", "password": self.password,
-            "csrfmiddlewaretoken": second.cookies["csrftoken"].value,
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(second.get("/api/events/").json()["events"][0]["id"], event_id)
-        first.post("/logout/", {"csrfmiddlewaretoken": first.cookies["csrftoken"].value})
-        self.assertEqual(first.get("/api/events/").status_code, 401)
-        self.assertEqual(second.get("/api/events/").status_code, 200)
+        }), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        second_header = {"HTTP_AUTHORIZATION": f'Bearer {response.json()["token"]}'}
+        self.assertEqual(second.get("/api/events/", **second_header).json()["events"][0]["id"], event_id)
+
+        first.post("/api/auth/logout/", **first_header)
+        self.assertEqual(first.get("/api/events/", **first_header).status_code, 401)
+        self.assertEqual(second.get("/api/events/", **second_header).status_code, 200)
 
     def test_common_six_character_password_is_accepted(self):
         response = self.client.post("/signup/", {

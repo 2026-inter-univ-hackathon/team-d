@@ -56,15 +56,13 @@ class TokenEventTests(TestCase):
 
     def test_invalid_tokens_never_fall_back_to_cookie(self):
         self.client.force_login(self.alice)
-        self.client.get("/")
-        csrf = self.client.cookies["csrftoken"].value
         expired_raw, expired = LoginToken.issue(self.alice)
         LoginToken.objects.filter(pk=expired.pk).update(expires_at=timezone.now() - timedelta(seconds=1))
         revoked_raw, _ = LoginToken.issue(self.alice)
         self.client.post("/api/auth/logout/", HTTP_AUTHORIZATION=f"Bearer {revoked_raw}")
         for authorization in ["", "Bearer", "Basic invalid", "Bearer invalid", f"Bearer {expired_raw}", f"Bearer {revoked_raw}"]:
             with self.subTest(authorization=authorization):
-                headers = {"HTTP_AUTHORIZATION": authorization, "HTTP_X_CSRFTOKEN": csrf}
+                headers = {"HTTP_AUTHORIZATION": authorization}
                 self.assertEqual(self.client.get("/api/events/", **headers).status_code, 401)
                 self.assertEqual(self.client.get(self.url, **headers).status_code, 401)
                 for method, url, data in [
@@ -85,19 +83,18 @@ class TokenEventTests(TestCase):
         self.assertEqual(Event.objects.get(pk=response.json()["event"]["id"]).user_id, self.alice.pk)
         self.assertEqual(self.client.session.session_key, session_key)
         self.assertEqual(self.client.session["_auth_user_id"], str(self.bob.pk))
-        self.assertEqual(self.client.get("/api/events/").json()["events"], [])
+        self.assertEqual(self.client.get("/api/events/").status_code, 401)
 
-    def test_cookie_writes_still_require_csrf_for_every_endpoint(self):
+    def test_cookie_auth_is_rejected_for_every_endpoint(self):
         self.client.force_login(self.alice)
-        self.client.get("/")
-        csrf = self.client.cookies["csrftoken"].value
         operations = [
-            ("post", "/api/events/", {"title": "追加"}, 201),
-            ("patch", self.url, {"version": 1, "memo": "変更"}, 200),
-            ("post", "/api/events/import/", {"events": [{"id": "cookie-old", "title": "取り込み"}]}, 200),
-            ("delete", self.url, {"version": 2}, 200),
+            ("post", "/api/events/", {"title": "追加"}),
+            ("patch", self.url, {"version": 1, "memo": "変更"}),
+            ("post", "/api/events/import/", {"events": [{"id": "cookie-old", "title": "取り込み"}]}),
+            ("delete", self.url, {"version": 1}),
         ]
-        for method, url, data, success in operations:
+        self.assertEqual(self.client.get("/api/events/").status_code, 401)
+        self.assertEqual(self.client.get(self.url).status_code, 401)
+        for method, url, data in operations:
             with self.subTest(method=method, url=url):
-                self.assertEqual(self.send(method, url, data).status_code, 403)
-                self.assertEqual(self.send(method, url, data, HTTP_X_CSRFTOKEN=csrf).status_code, success)
+                self.assertEqual(self.send(method, url, data).status_code, 401)
