@@ -300,11 +300,10 @@
 
     <div class="row" style="justify-content:space-between">
       <h1>助じゅ～る</h1>
-      <form method="post" action="{% url 'logout' %}" class="row">
-        {% csrf_token %}
-        <span>{{ request.user.email }}</span>
-        <button type="submit" class="secondary">ログアウト</button>
-      </form>
+      <div class="row">
+        <span id="current-user"></span>
+        <button id="logout-btn" type="button" class="secondary">ログアウト</button>
+      </div>
     </div>
     <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
@@ -388,6 +387,7 @@
   </main>
 
   <script src="static/legacy-export.js"></script>
+  <script src="static/login/api.js"></script>
   <script src="static/calendar-store.js"></script>
   <script>
     if (window.location.protocol !== 'file:') {
@@ -399,29 +399,34 @@
     const syncMessage = document.getElementById('sync-message');
     const calendarContent = document.getElementById('calendar-content');
     const reloadButton = document.getElementById('reload-events');
+    const currentUser = document.getElementById('current-user');
+    const logoutButton = document.getElementById('logout-btn');
+    const loginUrl = window.APP_CONFIG?.loginUrl || '/login/';
     let loading = false;
 
     async function apiRequest(url, method = 'GET', data) {
-      const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-      let response;
-      try {
-        response = await fetch(url, {
-          method, credentials: 'same-origin', cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-          body: data === undefined ? undefined : JSON.stringify(data),
-          signal: AbortSignal.timeout(15000),
-        });
-      } catch {
-        throw new Error('通信できませんでした。接続を確認し、予定を再読み込みしてください。');
-      }
-      if (response.status === 401) {
-        window.location.assign('/login/');
-        throw new Error('ログインし直してください。');
-      }
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || '処理できませんでした。画面を再読み込みしてください。');
-      return result;
+      return LoginApi.request(url, { method, data });
     }
+
+    window.addEventListener('auth-required', () => {
+      window.location.assign(loginUrl);
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      if (store.busy || loading) return;
+      logoutButton.disabled = true;
+      setSync('ログアウトしています…');
+      try {
+        await LoginApi.request('/api/auth/logout/', { method: 'POST' });
+        LoginApi.clearToken();
+        window.location.assign(loginUrl);
+      } catch (error) {
+        if (error.status !== 401) {
+          setSync(error.message, true);
+          logoutButton.disabled = false;
+        }
+      }
+    });
 
     const store = new CalendarStore(apiRequest);
     function loadEvents() { return store.load(); }
@@ -1019,8 +1024,19 @@
       else renderTimeline();
     }
 
+    async function initializeApp() {
+      try {
+        const result = await LoginApi.request('/api/auth/me/');
+        currentUser.textContent = result.user.email;
+        await refreshEvents();
+        await checkReminders();
+      } catch (error) {
+        if (error.status !== 401) setSync(error.message, true);
+      }
+    }
+
     updateNotifyBtn();
-    refreshEvents().then(checkReminders);
+    initializeApp();
     window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
     }
   </script>

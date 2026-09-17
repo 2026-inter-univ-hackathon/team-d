@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -35,9 +36,10 @@
       <a href="{% url 'signup' %}" {% if signup %}aria-current="page"{% endif %}>新規登録</a>
     </nav>
     <h2>{% if signup %}アカウントを作成{% else %}ログイン{% endif %}</h2>
-    <form method="post">
+    <form id="auth-form" method="post" data-mode="{% if signup %}signup{% else %}login{% endif %}" data-success-url="/">
       {% csrf_token %}
       {{ form.non_field_errors }}
+      <div id="auth-error" class="errorlist" role="alert" aria-live="assertive" style="white-space:pre-line"></div>
       <label for="id_username">ユーザー名</label>
       <div class="address">
         <input id="id_username" name="username" type="text" maxlength="32" required autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="username-hint username-errors" value="{{ form.username.value|default_if_none:'' }}" {% if signup %}pattern="[a-z0-9][a-z0-9._\-]{0,31}"{% endif %}>
@@ -63,5 +65,7 @@
     </form>
   </section>
 </main>
+<script src="{% static 'login/api.js' %}"></script>
+<script src="{% static 'login/auth.js' %}"></script>
 </body>
 </html>

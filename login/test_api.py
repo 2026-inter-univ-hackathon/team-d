@@ -220,7 +220,8 @@ class TokenSessionApiTests(TestCase):
         self.assertEqual(self.client.post("/api/auth/logout/", **self.header).status_code, 200)
         self.assertEqual(self.client.session.session_key, session_key)
         self.assertEqual(self.client.session["_auth_user_id"], str(self.other.pk))
-        self.assertContains(self.client.get("/"), "bob@example.com")
+        self.assertContains(self.client.get("/"), 'id="current-user"')
+        self.assertNotContains(self.client.get("/"), "bob@example.com")
 
     def test_method_restrictions_do_not_revoke_token(self):
         self.client.get("/")

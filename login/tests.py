@@ -9,13 +9,14 @@ class AuthTests(TestCase):
         return self.client.post("/signup/", {"username": username, "password1": self.password, "password2": self.password})
 
     def test_signup_login_logout(self):
-        self.assertRedirects(self.client.get("/"), "/login/?next=/")
+        self.assertContains(self.client.get("/"), 'id="current-user"')
         self.assertRedirects(self.register(), "/")
         user = User.objects.get(username="alice")
         self.assertEqual(user.email, "alice@example.com")
         self.assertNotEqual(user.password, self.password)
         self.assertTrue(user.check_password(self.password))
-        self.assertContains(self.client.get("/"), "alice@example.com")
+        self.assertContains(self.client.get("/"), 'src="static/login/api.js"')
+        self.assertNotContains(self.client.get("/"), "alice@example.com")
         self.assertEqual(self.client.get("/logout/").status_code, 405)
         self.assertRedirects(self.client.post("/logout/"), "/login/")
         self.assertNotIn("_auth_user_id", self.client.session)
@@ -39,6 +40,17 @@ class AuthTests(TestCase):
         client.force_login(User.objects.create_user(username="alice", password=self.password))
         self.assertEqual(client.post("/logout/").status_code, 403)
 
+    def test_auth_pages_load_token_scripts_even_with_legacy_cookie(self):
+        self.client.force_login(User.objects.create_user(username="alice", password=self.password))
+        for url, mode in [("/login/", "login"), ("/signup/", "signup")]:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'id="auth-form"')
+                self.assertContains(response, f'data-mode="{mode}"')
+                self.assertContains(response, 'login/api.js')
+                self.assertContains(response, 'login/auth.js')
+
     def test_complete_flow_with_csrf_and_two_browser_sessions(self):
         first = Client(enforce_csrf_checks=True)
         first.get("/signup/")
@@ -48,7 +60,7 @@ class AuthTests(TestCase):
             "csrfmiddlewaretoken": csrf,
         })
         self.assertEqual(response.status_code, 302)
-        self.assertContains(first.get("/"), "sharedlogin@example.com")
+        self.assertContains(first.get("/"), 'id="current-user"')
         response = first.post("/api/events/", data='{"title":"別のブラウザからも見える予定"}',
                               content_type="application/json", HTTP_X_CSRFTOKEN=first.cookies["csrftoken"].value)
         self.assertEqual(response.status_code, 201)

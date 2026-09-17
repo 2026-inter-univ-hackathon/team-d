@@ -9,8 +9,6 @@ from .forms import LoginForm, SignupForm
 @never_cache
 @require_http_methods(["GET", "POST"])
 def signup(request):
-    if request.user.is_authenticated:
-        return redirect("calendar")
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:
@@ -27,8 +25,6 @@ def signup(request):
 @never_cache
 @require_http_methods(["GET", "POST"])
 def sign_in(request):
-    if request.user.is_authenticated:
-        return redirect("calendar")
     form = LoginForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         login(request, form.get_user())
