@@ -76,3 +76,13 @@ class LoginToken(models.Model):
     def revoke(self):
         """ログアウト時に呼び、このトークンを無効にする。"""
         self.delete()
+
+
+class LoginAttempt(models.Model):
+    """ユーザー名を記録せず、ログイン失敗回数だけを保持する。"""
+
+    identifier_hash = models.CharField(max_length=64, unique=True)
+    failed_count = models.PositiveSmallIntegerField(default=0)
+    window_started_at = models.DateTimeField()
+    blocked_until = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)

@@ -9,6 +9,15 @@ from django.views.decorators.http import require_GET, require_POST
 from .authentication import token_required
 from .forms import LoginForm, SignupForm
 from .models import LoginToken
+from .rate_limit import blocked_seconds, clear_failures, record_failure
+
+
+def _rate_limited_response(retry_after):
+    return JsonResponse(
+        {"error": "ログイン試行が多すぎます。しばらく待ってから再度お試しください。"},
+        status=429,
+        headers={"Retry-After": str(retry_after)},
+    )
 
 
 @csrf_exempt
@@ -40,10 +49,17 @@ def sign_in(request):
             status=400,
         )
 
+    retry_after = blocked_seconds(data["username"])
+    if retry_after:
+        return _rate_limited_response(retry_after)
+
     # 既存のログインフォームでパスワードを照合
     form = LoginForm(request, data=data)
 
     if not form.is_valid():
+        retry_after = record_failure(data["username"])
+        if retry_after:
+            return _rate_limited_response(retry_after)
         return JsonResponse(
             {"error": "ユーザー名またはパスワードが違います。"},
             status=401,
@@ -53,6 +69,7 @@ def sign_in(request):
 
     # 前のステップで作った仕組みを使う
     raw_token, token = LoginToken.issue(user)
+    clear_failures(data["username"])
 
     return JsonResponse({
         "token": raw_token,
