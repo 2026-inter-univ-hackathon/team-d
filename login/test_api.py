@@ -224,10 +224,12 @@ class TokenSessionApiTests(TestCase):
         self.assertNotContains(self.client.get("/"), "bob@example.com")
 
     def test_method_restrictions_do_not_revoke_token(self):
-        self.client.get("/")
-        self.client.get("/login/")
-        csrf = self.client.cookies["csrftoken"].value
-        self.assertEqual(self.client.post("/api/auth/me/", HTTP_X_CSRFTOKEN=csrf, **self.header).status_code, 405)
+        csrf = "a" * 32
+        self.client.cookies["csrftoken"] = csrf
+        self.assertEqual(
+            self.client.post("/api/auth/me/", HTTP_X_CSRFTOKEN=csrf, **self.header).status_code,
+            405,
+        )
         self.assertEqual(self.client.get("/api/auth/logout/", **self.header).status_code, 405)
         self.assertIsNotNone(LoginToken.resolve(self.raw))
 

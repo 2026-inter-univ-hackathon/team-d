@@ -4,46 +4,15 @@ from django.test import TestCase, Client
 from .models import User
 
 
-class AuthTests(TestCase):
+class AuthPageTests(TestCase):
     password = "Demo-calendar!7392"
 
-    def register(self, username="alice"):
-        return self.client.post("/signup/", {"username": username, "password1": self.password, "password2": self.password})
+    def test_calendar_and_auth_pages_are_public_static_shells(self):
+        calendar = self.client.get("/")
+        self.assertEqual(calendar.status_code, 200)
+        self.assertContains(calendar, 'id="current-user"')
+        self.assertContains(calendar, 'src="static/app-config.js"')
 
-    def test_signup_login_logout(self):
-        self.assertContains(self.client.get("/"), 'id="current-user"')
-        self.assertRedirects(self.register(), "/")
-        user = User.objects.get(username="alice")
-        self.assertEqual(user.email, "alice@example.com")
-        self.assertNotEqual(user.password, self.password)
-        self.assertTrue(user.check_password(self.password))
-        self.assertContains(self.client.get("/"), 'src="static/login/api.js"')
-        self.assertNotContains(self.client.get("/"), "alice@example.com")
-        self.assertEqual(self.client.get("/logout/").status_code, 405)
-        self.assertRedirects(self.client.post("/logout/"), "/login/")
-        self.assertNotIn("_auth_user_id", self.client.session)
-        self.assertEqual(self.client.post("/login/", {"username": "alice", "password": "wrong"}).status_code, 200)
-        self.assertNotIn("_auth_user_id", self.client.session)
-        self.assertRedirects(self.client.post("/login/", {"username": "alice", "password": self.password}), "/")
-
-    def test_reject_duplicate_domain_and_weak_password(self):
-        self.register()
-        self.client.logout()
-        self.assertEqual(self.register().status_code, 200)
-        self.assertEqual(self.register("bob@gmail.com").status_code, 200)
-        self.assertEqual(self.register("bob@example.com").status_code, 200)
-        self.client.post("/signup/", {"username": "bob", "password1": "123", "password2": "123"})
-        self.assertEqual(User.objects.count(), 1)
-
-    def test_csrf_required(self):
-        client = Client(enforce_csrf_checks=True)
-        self.assertEqual(client.post("/signup/", {}).status_code, 403)
-        self.assertEqual(client.post("/login/", {}).status_code, 403)
-        client.force_login(User.objects.create_user(username="alice", password=self.password))
-        self.assertEqual(client.post("/logout/").status_code, 403)
-
-    def test_auth_pages_load_token_scripts_even_with_legacy_cookie(self):
-        self.client.force_login(User.objects.create_user(username="alice", password=self.password))
         for url, mode in [("/login/", "login"), ("/signup/", "signup")]:
             with self.subTest(url=url):
                 response = self.client.get(url)
@@ -52,6 +21,13 @@ class AuthTests(TestCase):
                 self.assertContains(response, f'data-mode="{mode}"')
                 self.assertContains(response, 'login/api.js')
                 self.assertContains(response, 'login/auth.js')
+                self.assertNotContains(response, "{%")
+                self.assertNotContains(response, "{{")
+
+    def test_auth_pages_are_get_only_and_server_logout_route_is_removed(self):
+        self.assertEqual(self.client.post("/login/").status_code, 405)
+        self.assertEqual(self.client.post("/signup/").status_code, 405)
+        self.assertEqual(self.client.get("/logout/").status_code, 404)
 
     def test_complete_flow_with_two_token_sessions(self):
         first = Client(enforce_csrf_checks=True)
@@ -78,40 +54,6 @@ class AuthTests(TestCase):
         first.post("/api/auth/logout/", **first_header)
         self.assertEqual(first.get("/api/events/", **first_header).status_code, 401)
         self.assertEqual(second.get("/api/events/", **second_header).status_code, 200)
-
-    def test_common_six_character_password_is_accepted(self):
-        response = self.client.post("/signup/", {
-            "username": "alice", "password1": "abcdef", "password2": "abcdef",
-        })
-        self.assertRedirects(response, "/")
-        self.assertTrue(User.objects.get(username="alice").check_password("abcdef"))
-        self.client.post("/logout/")
-        self.assertRedirects(self.client.post("/login/", {
-            "username": "alice", "password": "abcdef",
-        }), "/")
-
-    def test_five_character_password_is_rejected(self):
-        response = self.client.post("/signup/", {
-            "username": "alice", "password1": "abcde", "password2": "abcde",
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("password_too_short", [error.code for error in response.context["form"].errors.as_data()["password2"]])
-        self.assertFalse(User.objects.filter(username="alice").exists())
-
-    def test_numeric_and_username_matching_passwords_are_accepted(self):
-        for username, password in [("numeric", "123456"), ("alice12", "alice12")]:
-            with self.subTest(username=username):
-                self.client.logout()
-                response = self.client.post("/signup/", {
-                    "username": username, "password1": password, "password2": password,
-                })
-                self.assertRedirects(response, "/")
-                self.assertTrue(User.objects.get(username=username).check_password(password))
-                self.client.post("/logout/")
-                self.assertRedirects(self.client.post("/login/", {
-                    "username": username, "password": password,
-                }), "/")
-
 
 class LoginTokenTests(TestCase):
     @classmethod
