@@ -157,7 +157,7 @@
       }
     }
 
-    return { signup, login, logout, currentUser };
+    return { signup, login, logout, currentUser, auth };
   }
 
   return { create, accountEmail, FirebaseAuthError };

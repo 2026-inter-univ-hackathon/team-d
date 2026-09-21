@@ -1,121 +1,91 @@
 window.LoginApi = (() => {
-  const TOKEN_KEY = 'sukejuru-login-token';
-
-  // 今はローカルのDjangoへ接続。
-  // 公開時はAPP_CONFIGでDjangoの公開URLを指定する。
-  const API_BASE =
-    window.APP_CONFIG?.apiBaseUrl || window.location.origin;
-
   class ApiError extends Error {
-    constructor(message, status, details = {}) {
+    constructor(message, status = 400) {
       super(message);
       this.name = 'ApiError';
       this.status = status;
-      this.details = details;
     }
   }
 
-  function saveToken(token) {
-    if (typeof token !== 'string' || !token) {
-      throw new Error('ログイントークンが正しくありません。');
+  let clients;
+
+  function initializeClients() {
+    if (clients) return clients;
+    if (!window.FirebaseAuthClient || !window.FirebaseEventsClient) {
+      throw new ApiError('Firebaseの接続プログラムを読み込めませんでした。', 0);
     }
 
-    try {
-      sessionStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      throw new Error('ログイン状態を保存できませんでした。');
-    }
+    const authClient = window.FirebaseAuthClient.create({
+      firebase: window.firebase,
+      config: window.FIREBASE_CONFIG,
+    });
+    const eventsClient = window.FirebaseEventsClient.create({
+      firebase: window.firebase,
+      auth: authClient.auth,
+      db: window.firebase.firestore(),
+    });
+    clients = { authClient, eventsClient };
+    return clients;
   }
 
-  function getToken() {
-    try {
-      return sessionStorage.getItem(TOKEN_KEY);
-    } catch {
-      throw new Error('ログイン状態を読み込めませんでした。');
-    }
-  }
-
-  function clearToken() {
-    sessionStorage.removeItem(TOKEN_KEY);
-  }
-
-  function requireLogin(message) {
-    clearToken();
-
-    // 画面側で、この通知を受けてログイン画面へ移動する。
+  function requireLogin(message = 'ログインしてください。') {
     window.dispatchEvent(new Event('auth-required'));
-
     throw new ApiError(message, 401);
   }
 
-  async function request(
-    path,
-    { method = 'GET', data, authenticated = true } = {}
-  ) {
-    if (!path.startsWith('/api/')) {
-      throw new Error('APIの接続先が正しくありません。');
-    }
-
-    const headers = {
-      Accept: 'application/json',
-    };
-
-    if (data !== undefined) {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    if (authenticated) {
-      const token = getToken();
-
-      if (!token) {
-        requireLogin('ログインしてください。');
-      }
-
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    let response;
-
-    try {
-      response = await fetch(new URL(path, API_BASE), {
-        method,
-        headers,
-        body: data === undefined ? undefined : JSON.stringify(data),
-        credentials: 'omit',
-        cache: 'no-store',
-        redirect: 'error',
-        signal: AbortSignal.timeout(15000),
-      });
-    } catch {
-      throw new ApiError(
-        '通信できませんでした。接続を確認してください。',
-        0
-      );
-    }
-
-    if (authenticated && response.status === 401) {
-      requireLogin('ログインし直してください。');
-    }
-
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      throw new ApiError(
-        result?.error || '処理に失敗しました。',
-        response.status,
-        result || {}
-      );
-    }
-
-    if (result === null) {
-      throw new ApiError(
-        'サーバーからの応答を読み込めませんでした。',
-        response.status
-      );
-    }
-
-    return result;
+  async function signedInClients() {
+    const initialized = initializeClients();
+    const user = await initialized.authClient.currentUser();
+    if (!user) requireLogin();
+    return { ...initialized, user };
   }
 
-  return { request, saveToken, getToken, clearToken };
+  async function request(path, { method = 'GET', data } = {}) {
+    if (typeof path !== 'string' || !path.startsWith('/api/')) {
+      throw new ApiError('APIの接続先が正しくありません。');
+    }
+
+    const normalizedMethod = String(method).toUpperCase();
+    const initialized = initializeClients();
+
+    if (path === '/api/auth/signup/' && normalizedMethod === 'POST') {
+      return initialized.authClient.signup(data);
+    }
+    if (path === '/api/auth/login/' && normalizedMethod === 'POST') {
+      return initialized.authClient.login(data);
+    }
+    if (path === '/api/auth/logout/' && normalizedMethod === 'POST') {
+      await initialized.authClient.logout();
+      return { loggedOut: true };
+    }
+    if (path === '/api/auth/me/' && normalizedMethod === 'GET') {
+      const user = await initialized.authClient.currentUser();
+      if (!user) requireLogin();
+      return { user };
+    }
+
+    const { eventsClient } = await signedInClients();
+    if (path === '/api/events/' && normalizedMethod === 'GET') {
+      return { events: await eventsClient.list() };
+    }
+    if (path === '/api/events/' && normalizedMethod === 'POST') {
+      return { event: await eventsClient.create(data) };
+    }
+    if (path === '/api/events/import/' && normalizedMethod === 'POST') {
+      return eventsClient.import(data?.events);
+    }
+
+    const match = path.match(/^\/api\/events\/([^/]+)\/$/);
+    if (match && normalizedMethod === 'PATCH') {
+      const { version, ...changes } = data || {};
+      return { event: await eventsClient.update(match[1], changes, version) };
+    }
+    if (match && normalizedMethod === 'DELETE') {
+      return eventsClient.delete(match[1], data?.version);
+    }
+
+    throw new ApiError('APIの操作が正しくありません。', 404);
+  }
+
+  return { request };
 })();

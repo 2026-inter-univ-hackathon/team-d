@@ -13,7 +13,9 @@ class PagesBuildTests(SimpleTestCase):
             expected = {
                 ".nojekyll", "index.html", "login.html", "signup.html",
                 "static/app-config.js", "static/calendar-store.js", "static/legacy-export.js",
+                "static/firebase-config.js", "static/firebase-events.js",
                 "static/login/api.js", "static/login/auth.js", "static/login/auth.css",
+                "static/login/firebase-auth.js",
             }
             files = {str(path.relative_to(output)) for path in output.rglob("*") if path.is_file()}
             self.assertEqual(files, expected)
@@ -27,6 +29,8 @@ class PagesBuildTests(SimpleTestCase):
                 self.assertNotIn("{{", html)
             login = (output / "login.html").read_text()
             self.assertIn('href="signup.html"', login)
+            self.assertIn('src="static/firebase-config.js"', login)
+            self.assertIn('src="static/login/firebase-auth.js"', login)
             self.assertIn('src="static/login/api.js"', login)
             self.assertIn('data-success-url="index.html"', login)
 

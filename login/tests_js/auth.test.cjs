@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../static/login/auth.js'), 'utf8');
 
 // Exercise the actual submit handler with a small form adapter; no browser/server required.
-function setup({ mode = 'login', values = {}, request, saveToken, successUrl, missingForm = false } = {}) {
+function setup({ mode = 'login', values = {}, request, successUrl, missingForm = false } = {}) {
   const fields = { username: ' alice ', password: '123456', password1: '123456', password2: '123456', ...values };
   const passwordNames = mode === 'signup' ? ['password1', 'password2'] : ['password'];
   const passwords = passwordNames.map(name => ({ value: fields[name] }));
@@ -15,7 +15,6 @@ function setup({ mode = 'login', values = {}, request, saveToken, successUrl, mi
   const calls = [];
   const order = [];
   const redirects = [];
-  const saved = [];
   let handler;
   let prevented = 0;
   const form = {
@@ -38,33 +37,27 @@ function setup({ mode = 'login', values = {}, request, saveToken, successUrl, mi
       async request(endpoint, options) {
         calls.push({ endpoint, options });
         order.push('request');
-        return request ? request(endpoint, options) : { token: 'issued-token' };
-      },
-      saveToken(token) {
-        if (saveToken) saveToken(token);
-        saved.push(token);
-        order.push('save');
+        return request ? request(endpoint, options) : { user: { id: 'user-1' } };
       },
     },
     window: { location: { assign(url) { redirects.push(url); order.push('redirect'); } } },
   };
   vm.runInNewContext(source, sandbox);
-  return { calls, order, redirects, saved, button, errors, passwords, fields,
+  return { calls, order, redirects, button, errors, passwords, fields,
     handler: () => handler,
     prevented: () => prevented,
     submit: () => handler({ preventDefault() { prevented++; } }),
   };
 }
 
-test('login posts credentials, saves token before navigation and clears password', async () => {
+test('login sends credentials to Firebase adapter before navigation and clears password', async () => {
   const state = setup({ successUrl: '/team-d/index.html', values: { password: ' secret ' } });
   await state.submit();
   assert.equal(state.calls[0].endpoint, '/api/auth/login/');
   assert.equal(state.calls[0].options.method, 'POST');
-  assert.equal(state.calls[0].options.authenticated, false);
+  assert.equal(state.calls[0].options.authenticated, undefined);
   assert.deepEqual(JSON.parse(JSON.stringify(state.calls[0].options.data)), { username: 'alice', password: ' secret ' });
-  assert.deepEqual(state.order, ['request', 'save', 'redirect']);
-  assert.deepEqual(state.saved, ['issued-token']);
+  assert.deepEqual(state.order, ['request', 'redirect']);
   assert.deepEqual(state.redirects, ['/team-d/index.html']);
   assert.equal(state.passwords[0].value, '');
   assert.equal(state.button.disabled, false);
@@ -95,7 +88,6 @@ test('validation messages are shown as text with labels and input stays availabl
   assert.equal(state.errors.textContent, 'ユーザー名：<b>登録済み</b>\n確認用パスワード：一致しません。\n全体のエラー');
   assert.equal(state.passwords[0].value, '123456');
   assert.equal(state.button.disabled, false);
-  assert.deepEqual(state.saved, []);
   assert.deepEqual(state.redirects, []);
 });
 
@@ -103,7 +95,7 @@ test('network failure restores button and permits retry', async () => {
   let attempts = 0;
   const state = setup({ request: async () => {
     if (++attempts === 1) throw new Error('通信できませんでした。');
-    return { token: 'retry-token' };
+    return { user: { id: 'user-1' } };
   } });
   await state.submit();
   assert.equal(state.errors.textContent, '通信できませんでした。');
@@ -113,7 +105,7 @@ test('network failure restores button and permits retry', async () => {
   await state.submit();
   assert.equal(state.errors.textContent, '');
   assert.equal(state.calls.length, 2);
-  assert.deepEqual(state.saved, ['retry-token']);
+  assert.deepEqual(state.redirects, ['/']);
 });
 
 test('pending request prevents double submission', async () => {
@@ -124,16 +116,15 @@ test('pending request prevents double submission', async () => {
   assert.equal(state.button.textContent, '処理しています…');
   await state.submit();
   assert.equal(state.calls.length, 1);
-  finish({ token: 'issued-token' });
+  finish({ user: { id: 'user-1' } });
   await pending;
-  assert.deepEqual(state.saved, ['issued-token']);
   assert.deepEqual(state.redirects, ['/']);
 });
 
-test('token storage failure does not navigate or clear password', async () => {
-  const state = setup({ saveToken() { throw new Error('ログイン状態を保存できませんでした。'); } });
+test('Firebase login failure does not navigate or clear password', async () => {
+  const state = setup({ request: async () => { throw new Error('ユーザー名またはパスワードが違います。'); } });
   await state.submit();
-  assert.equal(state.errors.textContent, 'ログイン状態を保存できませんでした。');
+  assert.equal(state.errors.textContent, 'ユーザー名またはパスワードが違います。');
   assert.equal(state.passwords[0].value, '123456');
   assert.equal(state.button.disabled, false);
   assert.deepEqual(state.redirects, []);

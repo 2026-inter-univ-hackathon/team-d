@@ -46,13 +46,10 @@
         ? '/api/auth/signup/'
         : '/api/auth/login/';
 
-      const result = await LoginApi.request(endpoint, {
+      await LoginApi.request(endpoint, {
         method: 'POST',
-        authenticated: false,
         data,
       });
-
-      LoginApi.saveToken(result.token);
 
       // パスワードをフォームに残さない
       form.querySelectorAll('input[type="password"]').forEach(

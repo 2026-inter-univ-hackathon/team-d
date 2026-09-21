@@ -66,6 +66,7 @@ test('sets tab-scoped persistence and signs up with normalized credentials', asy
     return { user: { uid: 'uid-1', email: args[0] } };
   };
   const client = FirebaseAuthClient.create({ firebase: setup.firebase, config });
+  assert.equal(client.auth, setup.auth);
 
   const result = await client.signup({
     username: ' Alice ', password1: '123456', password2: '123456',

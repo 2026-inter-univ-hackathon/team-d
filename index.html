@@ -388,12 +388,18 @@
 
   <script src="static/legacy-export.js"></script>
   <script src="static/app-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="static/firebase-config.js"></script>
+  <script src="static/login/firebase-auth.js"></script>
+  <script src="static/firebase-events.js"></script>
   <script src="static/login/api.js"></script>
   <script src="static/calendar-store.js"></script>
   <script>
     if (window.location.protocol !== 'file:') {
     // ============================================================
-    // データの保存と読み込み（Django API）
+    // データの保存と読み込み（Firebase Authentication / Firestore）
     // ============================================================
     const REMINDER_DAYS = 3;
     const HOUR_H = 32;
@@ -419,7 +425,6 @@
       setSync('ログアウトしています…');
       try {
         await LoginApi.request('/api/auth/logout/', { method: 'POST' });
-        LoginApi.clearToken();
         window.location.assign(loginUrl);
       } catch (error) {
         if (error.status !== 401) {
