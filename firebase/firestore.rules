@@ -19,9 +19,9 @@ service cloud.firestore {
         && data.title.size() >= 1
         && data.title.size() <= 200
         && data.memo is string
-        && data.memo.size() <= 5000
+        && data.memo.size() <= 10000
         && data.status is string
-        && data.status in ['undecided', 'confirmed', 'completed']
+        && data.status in ['TENTATIVE', 'CONFIRMED', 'COMPLETED']
         && (data.date == null || data.date is string)
         && (data.time == null || data.time is string)
         && data.duration is int
