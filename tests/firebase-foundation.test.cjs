@@ -1,0 +1,41 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+
+const root = path.resolve(__dirname, '..');
+
+test('Firebase web config exposes only the four expected public settings', () => {
+  const source = fs.readFileSync(
+    path.join(root, 'static/firebase-config.js'),
+    'utf8'
+  );
+  const context = { window: {} };
+
+  vm.runInNewContext(source, context);
+
+  assert.deepEqual(
+    Object.keys(context.window.FIREBASE_CONFIG),
+    ['apiKey', 'authDomain', 'projectId', 'appId']
+  );
+  assert.equal(Object.isFrozen(context.window.FIREBASE_CONFIG), true);
+  assert.equal(source.includes('serviceAccount'), false);
+  assert.equal(source.includes('private_key'), false);
+});
+
+test('Firestore rules restrict every event operation to its authenticated owner', () => {
+  const rules = fs.readFileSync(
+    path.join(root, 'firebase/firestore.rules'),
+    'utf8'
+  );
+
+  assert.match(rules, /request\.auth != null/);
+  assert.match(rules, /request\.auth\.uid == userId/);
+  assert.match(rules, /match \/users\/\{userId\}\/events\/\{eventId\}/);
+  assert.match(rules, /allow read: if isOwner\(userId\)/);
+  assert.match(rules, /allow create: if isOwner\(userId\)/);
+  assert.match(rules, /allow update: if isOwner\(userId\)/);
+  assert.match(rules, /allow delete: if isOwner\(userId\)/);
+  assert.match(rules, /request\.resource\.data\.version == resource\.data\.version \+ 1/);
+});
