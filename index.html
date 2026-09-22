@@ -259,6 +259,7 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
+      z-index: 100;
     }
 
     #add-event-dialog {
@@ -447,7 +448,6 @@
           <button id="detail-save">保存</button>
           <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
           <button id="detail-delete" class="danger">削除</button>
-          <button id="detail-close" class="secondary">閉じる</button>
         </div>
       </section>
     </div>
@@ -1090,10 +1090,7 @@
       closeDetail();
       renderAll();
     });
-
-    document.getElementById('detail-close').addEventListener('click', closeDetail);
-    const detailCloseBtn = document.getElementById('detail-close-btn');
-    if (detailCloseBtn) detailCloseBtn.addEventListener('click', closeDetail);
+    document.getElementById('detail-close-btn').addEventListener('click', closeDetail);
 
     function closeDetail() {
       window.location.hash = '';
