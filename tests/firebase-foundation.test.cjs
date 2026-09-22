@@ -38,4 +38,11 @@ test('Firestore rules restrict every event operation to its authenticated owner'
   assert.match(rules, /allow update: if isOwner\(userId\)/);
   assert.match(rules, /allow delete: if isOwner\(userId\)/);
   assert.match(rules, /request\.resource\.data\.version == resource\.data\.version \+ 1/);
+  assert.match(rules, /function isValidDate\(value\)/);
+  assert.match(rules, /value\.matches\('\^\[0-9\]\{4\}-\[0-9\]\{2\}-\[0-9\]\{2\}\$'\)/);
+  assert.match(rules, /function isValidTime\(value\)/);
+  assert.match(rules, /value\.matches\('\^\(\[01\]\[0-9\]\|2\[0-3\]\):00\$'\)/);
+  assert.match(rules, /data\.date != null \|\| data\.time == null/);
+  assert.match(rules, /isValidDate\(data\.remindedOn\)/);
+  assert.match(rules, /hasSameLegacyId\(resource\.data, request\.resource\.data\)/);
 });
