@@ -1,5 +1,7 @@
 # 助じゅ～る
 
+> この文書はDjango・SQLite認証を使用していた旧構成の説明です。現在の画面はFirebase AuthenticationとCloud Firestoreへ接続します。現在の手順は[Firebase・GitHub Pages版の説明](FIREBASE_SETUP.md)を参照してください。
+
 日時が決まっていない予定を未確定トレイに置き、決まったらカレンダーへドラッグして管理するアプリです。
 `@example.com` のデモアカウントでログインし、自分の予定だけを保存・編集できます。
 

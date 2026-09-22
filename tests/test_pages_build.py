@@ -3,13 +3,13 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 
-from scripts.build_pages import ROOT, build, validate_api_base_url
+from scripts.build_pages import ROOT, build, validate_firebase_config
 
 
 class PagesBuildTests(SimpleTestCase):
-    def test_build_contains_only_static_site_files_and_public_api_config(self):
+    def test_build_contains_only_firebase_static_site_files(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as directory:
-            output = build("https://api.example.com", Path(directory) / "site")
+            output = build(Path(directory) / "site")
             expected = {
                 ".nojekyll", "index.html", "login.html", "signup.html",
                 "static/app-config.js", "static/calendar-store.js", "static/legacy-export.js",
@@ -20,8 +20,11 @@ class PagesBuildTests(SimpleTestCase):
             files = {str(path.relative_to(output)) for path in output.rglob("*") if path.is_file()}
             self.assertEqual(files, expected)
             config = (output / "static" / "app-config.js").read_text()
-            self.assertIn('apiBaseUrl: "https://api.example.com"', config)
+            self.assertNotIn("apiBaseUrl", config)
             self.assertIn("loginUrl: 'login.html'", config)
+
+            firebase_config = (output / "static" / "firebase-config.js").read_text()
+            self.assertIn("nepp-sukejuru-f8c30.firebaseapp.com", firebase_config)
 
             for name in ("index.html", "login.html", "signup.html"):
                 html = (output / name).read_text()
@@ -34,18 +37,25 @@ class PagesBuildTests(SimpleTestCase):
             self.assertIn('src="static/login/api.js"', login)
             self.assertIn('data-success-url="index.html"', login)
 
-    def test_api_origin_validation(self):
-        for value in (
-            "https://api.example.com/path", "https://user@example.com", "https://api.example.com?x=1",
-            "http://api.example.com", "javascript:alert(1)", "//api.example.com", "",
-        ):
-            with self.subTest(value=value):
-                with self.assertRaises(ValueError):
-                    validate_api_base_url(value)
-        self.assertEqual(validate_api_base_url("https://api.example.com/"), "https://api.example.com")
-        self.assertEqual(validate_api_base_url("http://127.0.0.1:8000"), "http://127.0.0.1:8000")
+    def test_firebase_config_requires_all_public_values(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            config = Path(directory) / "firebase-config.js"
+            for missing in ("apiKey", "authDomain", "projectId", "appId"):
+                values = {
+                    "apiKey": "key", "authDomain": "demo.firebaseapp.com",
+                    "projectId": "demo", "appId": "app",
+                }
+                values[missing] = ""
+                config.write_text(
+                    "window.FIREBASE_CONFIG = {\n"
+                    + "\n".join(f"  {key}: '{value}'," for key, value in values.items())
+                    + "\n};\n",
+                    encoding="utf-8",
+                )
+                with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, missing):
+                    validate_firebase_config(config)
 
     def test_refuses_output_outside_project(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
-                build("https://api.example.com", Path(directory) / "site")
+                build(Path(directory) / "site")

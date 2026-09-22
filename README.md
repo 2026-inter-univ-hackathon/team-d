@@ -47,3 +47,7 @@
 ## Django・SQLite版の起動手順
 
 新規登録・ログイン機能を追加した版の起動方法と仕様は、[Django・SQLite版の説明](docs/DJANGO_SETUP.md)を参照してください。
+
+## Firebase・GitHub Pages版
+
+現在のFirebase Authentication・Cloud Firestore構成と、GitHub Pages用ファイルの生成方法は、[Firebase・GitHub Pages版の説明](docs/FIREBASE_SETUP.md)を参照してください。
