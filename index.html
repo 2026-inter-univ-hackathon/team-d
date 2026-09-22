@@ -6,23 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>助じゅ～る</title>
   <link href="css/beer.min.css" rel="stylesheet">
-
   <style>
-    main {
-      max-width: 980px;
-      margin: 0 auto;
+    #detail-section {
+      align-self: start;
     }
 
     .lead {
       color: #666;
       margin: 0 0 24px;
-    }
-
-    section {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
     }
 
     .row {
@@ -47,7 +38,6 @@
     }
 
     #current-label {
-      font-weight: bold;
       min-width: 8em;
       text-align: center;
     }
@@ -59,14 +49,15 @@
       gap: 8px;
       min-height: 48px;
       padding: 8px;
-      border: 1px dashed var(--line);
+      margin: 16px;
+      border: 1px solid var(--surface-container-highest);
       border-radius: 6px;
     }
 
     #tray.drag-over,
     .day-cell.drag-over,
     .hour-row.drag-over {
-      background: #eaf2fb;
+      background-color: color-mix(in srgb, currentColor 10%, transparent);
     }
 
     /* ---------------- event chip ---------------- */
@@ -85,7 +76,7 @@
     }
 
     .event.status-tentative {
-      background: repeating-linear-gradient(45deg, #dce8f5, #dce8f5 6px, #eef4fb 6px, #eef4fb 12px);
+      background: var(--surface-container-highest);
       color: var(--accent);
       border: 2px dashed var(--accent);
       opacity: .85;
@@ -108,39 +99,51 @@
     #month-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-    }
-
-    .weekday {
-      text-align: center;
-      font-size: .8rem;
-      color: #666;
-      padding: 4px 0;
     }
 
     .day-cell {
       min-height: 90px;
-      border: 1px solid var(--line);
-      border-radius: 4px;
+      border: 1px solid var(--outline);
       padding: 4px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
       overflow: hidden;
     }
 
     .day-cell.other-month {
-      color: #666;
+      opacity: 0.5;
     }
 
-    .day-cell.today {
-      border-color: var(--accent);
-      border-width: 2px;
+    .day-cell.today>.day-num>.date {
+      background: var(--primary);
+      color: var(--on-primary);
     }
 
     .day-num {
       font-size: .8rem;
       font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+
+    .day-num>.date {
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background-color .15s ease, color 0.2s ease;
+    }
+
+    .day-num>.date:hover {
+      background-color: var(--surface-container-highest);
+    }
+
+    .day-cell.today>.day-num>.date:hover {
+      background-color: var(--inverse-primary);
+      color: var(--primary);
     }
 
     /* ---------------- timeline view ---------------- */
@@ -151,7 +154,7 @@
       margin-bottom: 8px;
       min-height: 36px;
       padding: 6px;
-      border: 1px dashed var(--line);
+      border: 1px dashed var(--outline);
       border-radius: 6px;
     }
 
@@ -159,7 +162,7 @@
       display: flex;
       gap: 8px;
       align-items: flex-start;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid var(--outline);
       height: 64px;
       box-sizing: border-box;
     }
@@ -215,14 +218,6 @@
       background: rgba(255, 255, 255, .7);
     }
 
-    /* ---------------- detail panel ---------------- */
-    #detail-section label {
-      display: block;
-      font-size: .85rem;
-      color: #666;
-      margin: 8px 0 4px;
-    }
-
     #detail-section .row {
       margin-top: 12px;
     }
@@ -231,6 +226,18 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
+    }
+
+    #add-event-dialog {
+      height: 40vh;
+    }
+
+    #detail-title {
+      font-size: 1.5rem;
+    }
+
+    #detail-memo {
+      height: 48px;
     }
 
     /* --- mobile device --- */
@@ -300,82 +307,138 @@
 </head>
 
 <body>
-  <main class="container">
+  <header>
+    <nav>
+      <h5 class="max">助じゅ～る</h5>
+      <h6 id="current-label"></h6>
+      <div>
+        <button class="border transparent">
+          <span class="current">月表示</span>
+          <i>arrow_drop_down</i>
+        </button>
+        <menu style="width: 176px;">
+          <li id="view-month" class="active">
+            <i>calendar_view_month</i>
+            <span>月表示</span>
+          </li>
+          <li id="view-timeline">
+            <i>timeline</i>
+            <span>タイムライン</span>
+          </li>
+        </menu>
+      </div>
+      <nav class="group connected">
+        <button id="nav-prev" class="border left-round">
+          <i>arrow_back</i>
+        </button>
+        <button id="nav-today" class="border">
+          <i>calendar_today</i>
+          <span>今日</span>
+        </button>
+        <button id="nav-next" class="border right-round">
+          <i>arrow_forward</i>
+        </button>
+      </nav>
+    </nav>
+  </header>
+  <main class="responsive">
+    <div class="grid">
+      <section id="calendar-section" class="s12">
+        <div class="toolbar">
 
-    <h1>助じゅ～る</h1>
-    <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
+          <div class="row">
 
-    <section>
-      <div class="toolbar">
-        <div class="row">
-          <button id="view-month">月表示</button>
-          <button id="view-timeline" class="secondary">タイムライン</button>
+
+          </div>
+          <button id="notify-btn" class="secondary">🔔 通知を有効にする</button>
         </div>
-        <div class="row">
-          <button id="nav-prev" class="secondary">◀</button>
-          <button id="nav-today" class="secondary">今日</button>
-          <button id="nav-next" class="secondary">▶</button>
-          <span id="current-label"></span>
+        <div id="month-view">
+          <div id="month-grid"></div>
         </div>
-        <button id="notify-btn" class="secondary">🔔 通知を有効にする</button>
-      </div>
-    </section>
+        <div id="timeline-view" hidden>
+          <div id="timeline-allday"></div>
+          <div id="timeline-hours"></div>
+        </div>
+      </section>
 
-    <section>
-      <h2>未確定トレイ（日時未定の予定）</h2>
-      <div class="row">
-        <input id="new-title" type="text" placeholder="予定のタイトル" style="flex:1">
-        <button id="add-event">トレイに追加</button>
-      </div>
-      <p class="muted">ここに追加した予定は、下のカレンダー／タイムラインへドラッグして日時を割り当ててください。</p>
-      <div id="tray"></div>
-    </section>
-
-    <section id="calendar-section">
-      <div id="month-view">
-        <div id="month-grid"></div>
-      </div>
-      <div id="timeline-view" hidden>
-        <div id="timeline-allday"></div>
-        <div id="timeline-hours"></div>
-      </div>
-    </section>
-
-    <!-- ============================================================
+      <!-- ============================================================
        AI に任せない部分：予定の状態（未確定→確定／完了）は
        人がこのパネルのボタンを押すまで自動では変わりません。
        ============================================================ -->
-    <section id="detail-section" hidden>
-      <h2>予定の詳細</h2>
-      <label>タイトル</label>
-      <input id="detail-title" type="text">
-      <label>メモ</label>
-      <textarea id="detail-memo" rows="2"></textarea>
-      <label>所要時間（時間）</label>
-      <input id="detail-duration" type="number" min="1" max="24" step="1" style="width:6em">
-      <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
-      <label>ステータス（人が決める）</label>
-      <div class="row">
-        <button id="status-tentative" class="secondary">未確定</button>
-        <button id="status-confirmed" class="secondary">確定</button>
-        <button id="status-completed" class="secondary">完了</button>
-      </div>
-      <div class="row">
-        <button id="detail-save">保存</button>
-        <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
-        <button id="detail-delete" class="danger">削除</button>
-        <button id="detail-close" class="secondary">閉じる</button>
-      </div>
-    </section>
-
+      <section id="detail-section" class="s12 m5 l4" hidden>
+        <header style="height: 24px !important">
+          <nav>
+            <button id="detail-close-btn" class="transparent circle absolute right">
+              <i>close</i>
+            </button>
+          </nav>
+        </header>
+        <div class="field max">
+          <input id="detail-title" type="text" placeholder="予定のタイトル">
+        </div>
+        <div class="field label border">
+          <textarea id="detail-memo" rows="2"></textarea>
+          <label>予定のメモ</label>
+        </div>
+        <div class="field label border">
+          <input id="detail-duration" type="number" min="1" max="24" step="1">
+          <label>予定の所要時間（時間）</label>
+        </div>
+        <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
+        <div class="field middle-align">
+          <nav>
+            <div class="max">
+              <h6>ステータス</h6>
+              <div>予定のステータスを人が決定する。</div>
+            </div>
+            <div>
+              <button class="round transparent border">
+                <span class="current-status">未確定</span>
+                <i>arrow_drop_down</i>
+              </button>
+              <menu>
+                <li id="status-tentative">未確定</li>
+                <li id="status-confirmed">確定</li>
+                <li id="status-completed">完了</li>
+              </menu>
+            </div>
+          </nav>
+        </div>
+        <div class="row">
+          <button id="detail-save">保存</button>
+          <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
+          <button id="detail-delete" class="danger">削除</button>
+          <button id="detail-close" class="secondary">閉じる</button>
+        </div>
+      </section>
+    </div>
   </main>
-  <button class="l m square round large add-button">
+  <button class="l m round large add-button" data-ui="#add-event-dialog">
     <i>add</i>
     <span>予定の追加</span>
   </button>
-  <button class="s square round large add-button">
+  <button class="s square round large add-button" data-ui="#add-event-dialog">
     <i>add</i>
   </button>
+  <dialog class="bottom" id="add-event-dialog">
+    <nav>
+      <h5 class="max">予定の追加</h5>
+      <button class="transparent circle" data-ui="#add-event-dialog">
+        <i>close</i>
+      </button>
+    </nav>
+    <div class="field label border">
+      <input type="text" id="new-title">
+      <label>予定のタイトル</label>
+    </div>
+    <div id="tray"></div>
+    <nav class="right-align">
+      <button id="add-event">追加</button>
+    </nav>
+  </dialog>
+  <script src="js/material-dynamic-colors.min.js"></script>
+  <script src="js/beer.min.js"></script>
+
   <script>
     // ============================================================
     // データの保存と読み込み（localStorage）
@@ -428,6 +491,7 @@
     const timelineHoursEl = document.getElementById('timeline-hours');
     const currentLabelEl = document.getElementById('current-label');
     const detailSection = document.getElementById('detail-section');
+    let wasDialogOpenOnDrag = false;
 
     // ============================================================
     // 予定チップの生成（ドラッグ元・クリックで詳細表示）
@@ -440,10 +504,28 @@
       chip.dataset.id = ev.id;
       chip.title = ev.memo || ev.title;
       chip.addEventListener('dragstart', (e) => {
+        const isFromTray = chip.closest('#tray') !== null || !ev.date;
+        if (isFromTray) {
+          wasDialogOpenOnDrag = true;
+          setTimeout(() => {
+            ui("#add-event-dialog");
+          }, 0);
+        }
         e.dataTransfer.setData('text/plain', ev.id);
         e.dataTransfer.effectAllowed = 'move';
       });
-      chip.addEventListener('click', () => openDetail(ev.id));
+      chip.addEventListener('dragend', () => {
+        if (wasDialogOpenOnDrag) {
+          wasDialogOpenOnDrag = false;
+          setTimeout(() => {
+            ui("#add-event-dialog");
+          }, 0);
+        }
+      });
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDetail(ev.id);
+      });
       return chip;
     }
 
@@ -459,6 +541,12 @@
         el.classList.remove('drag-over');
         const id = e.dataTransfer.getData('text/plain');
         if (id) onDrop(id);
+        if (wasDialogOpenOnDrag) {
+          wasDialogOpenOnDrag = false;
+          setTimeout(() => {
+            ui("#add-event-dialog");
+          }, 0);
+        }
       });
     }
     //
@@ -472,7 +560,7 @@
       if (untimed.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'muted';
-        empty.textContent = 'トレイは空です';
+        empty.innerHTML = '<span style="margin-top: auto; margin-bottom: auto;">トレイは空です</span>';
         trayEl.appendChild(empty);
       }
       untimed.forEach(ev => trayEl.appendChild(createEventChip(ev)));
@@ -499,7 +587,6 @@
 
       ['日', '月', '火', '水', '木', '金', '土'].forEach(w => {
         const el = document.createElement('div');
-        el.className = 'weekday';
         el.textContent = w;
         monthGridEl.appendChild(el);
       });
@@ -510,7 +597,10 @@
       const events = loadEvents();
       const today = todayStr();
 
-      for (let i = 0; i < 35; i++) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const cellCount = (startOffset + daysInMonth) > 35 ? 42 : 35;
+
+      for (let i = 0; i < cellCount; i++) {
         const cellDate = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
         const cellStr = dateStr(cellDate);
         const cell = document.createElement('div');
@@ -520,10 +610,16 @@
 
         const num = document.createElement('div');
         num.className = 'day-num';
-        num.textContent = cellDate.getDate();
+        num.innerHTML = `<span class="center date">${cellDate.getDate()}</span>`;
         cell.appendChild(num);
 
         events.filter(ev => ev.date === cellStr).forEach(ev => cell.appendChild(createEventChip(ev)));
+
+        cell.addEventListener('click', (e) => {
+          if (e.target.closest('.event')) return;
+          viewDate = new Date(cellDate);
+          setView('timeline');
+        });
 
         addDropHandlers(cell, (id) => {
           const evs = loadEvents();
@@ -544,7 +640,8 @@
     function renderTimeline() {
       const dayStr = dateStr(viewDate);
       const weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
-      currentLabelEl.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日(${weekdayNames[viewDate.getDay()]})`;
+      let labelText = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日(${weekdayNames[viewDate.getDay()]})`;
+      currentLabelEl.textContent = labelText;
 
       const events = loadEvents().filter(ev => ev.date === dayStr);
 
@@ -634,6 +731,12 @@
         ev.time = `${pad2(hour)}:00`;
         saveEvents(evs);
         renderAll();
+        if (wasDialogOpenOnDrag) {
+          wasDialogOpenOnDrag = false;
+          setTimeout(() => {
+            ui("#add-event-dialog");
+          }, 0);
+        }
       });
       timelineHoursEl.appendChild(overlay);
     }
@@ -712,8 +815,9 @@
     // ============================================================
     function setView(next) {
       view = next;
-      document.getElementById('view-month').className = view === 'month' ? '' : 'secondary';
-      document.getElementById('view-timeline').className = view === 'timeline' ? '' : 'secondary';
+      document.querySelector(".current").textContent = view === 'month' ? '月表示' : 'タイムライン';
+      document.getElementById('view-month').className = view === 'month' ? 'active' : '';
+      document.getElementById('view-timeline').className = view === 'timeline' ? 'active' : '';
       monthViewEl.hidden = view !== 'month';
       timelineViewEl.hidden = view !== 'timeline';
       renderAll();
@@ -768,6 +872,11 @@
     // 予定の詳細パネル（人がステータスを確定する場所）
     // ============================================================
     function openDetail(id) {
+      if (!detailSection.hidden && selectedEventId === id) {
+        closeDetail();
+        return;
+      }
+      window.location.hash = `#${id}`;
       selectedEventId = id;
       pendingStatus = null;
       const ev = loadEvents().find(e => e.id === id);
@@ -776,13 +885,24 @@
       document.getElementById('detail-memo').value = ev.memo || '';
       document.getElementById('detail-duration').value = ev.duration || 1;
       highlightStatus(ev.status);
+      const calendarSection = document.getElementById('calendar-section');
+      calendarSection.className = 's12 m7 l8';
+      detailSection.className = 's12 m5 l4';
       detailSection.hidden = false;
-      detailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      adjustHeight(document.getElementById('detail-memo'));
     }
 
     function highlightStatus(status) {
+      const statusEl = document.querySelector(".current-status");
+      if (status === 'TENTATIVE') {
+        statusEl.textContent = '未確定';
+      } else if (status === 'CONFIRMED') {
+        statusEl.textContent = '確定';
+      } else if (status === 'COMPLETED') {
+        statusEl.textContent = '完了';
+      }
       ['tentative', 'confirmed', 'completed'].forEach(s => {
-        document.getElementById(`status-${s}`).className = s.toUpperCase() === status ? '' : 'secondary';
+        document.getElementById(`status-${s}`).className = s.toUpperCase() === status ? 'active' : '';
       });
     }
 
@@ -793,6 +913,15 @@
         highlightStatus(pendingStatus);
       });
     });
+
+    function adjustHeight(target) {
+      const heightLimit = 20;
+      target.style.height = 'auto';
+      target.style.height = Math.min(target.scrollHeight, heightLimit * 48) + 'px';
+    }
+    document.getElementById('detail-memo').addEventListener('input', (e) => {
+      adjustHeight(e.target);
+    })
 
     document.getElementById('detail-save').addEventListener('click', () => {
       if (!selectedEventId) return;
@@ -831,11 +960,16 @@
     });
 
     document.getElementById('detail-close').addEventListener('click', closeDetail);
+    const detailCloseBtn = document.getElementById('detail-close-btn');
+    if (detailCloseBtn) detailCloseBtn.addEventListener('click', closeDetail);
 
     function closeDetail() {
+      window.location.hash = '';
       selectedEventId = null;
       pendingStatus = null;
       detailSection.hidden = true;
+      const calendarSection = document.getElementById('calendar-section');
+      calendarSection.className = 's12';
     }
 
     // ============================================================
@@ -887,6 +1021,14 @@
       if (document.visibilityState === 'visible') checkReminders();
     });
 
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.location.hash) {
+        setTimeout(() => {
+          openDetail(window.location.hash.split("#")[1]);
+        }, 300);
+      }
+    })
+
     // ============================================================
     // 全体描画
     // ============================================================
@@ -900,8 +1042,6 @@
     renderAll();
     checkReminders();
   </script>
-  <script src="js/material-dynamic-colors.min.js"></script>
-  <script src="js/beer.min.js"></script>
 </body>
 
 </html>
