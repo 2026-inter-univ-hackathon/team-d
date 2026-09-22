@@ -7,7 +7,10 @@ const source = fs.readFileSync(path.join(__dirname, '../static/login/auth.js'), 
 
 // Exercise the actual submit handler with a small form adapter; no browser/server required.
 function setup({ mode = 'login', values = {}, request, successUrl, missingForm = false } = {}) {
-  const fields = { username: ' alice ', password: '123456', password1: '123456', password2: '123456', ...values };
+  const fields = {
+    email: ' alice@example.com ', username: ' 山田 太郎 ',
+    password: '123456', password1: '123456', password2: '123456', ...values,
+  };
   const passwordNames = mode === 'signup' ? ['password1', 'password2'] : ['password'];
   const passwords = passwordNames.map(name => ({ value: fields[name] }));
   const button = { textContent: mode === 'signup' ? '新規登録' : 'ログイン', disabled: false };
@@ -56,7 +59,9 @@ test('login sends credentials to Firebase adapter before navigation and clears p
   assert.equal(state.calls[0].endpoint, '/api/auth/login/');
   assert.equal(state.calls[0].options.method, 'POST');
   assert.equal(state.calls[0].options.authenticated, undefined);
-  assert.deepEqual(JSON.parse(JSON.stringify(state.calls[0].options.data)), { username: 'alice', password: ' secret ' });
+  assert.deepEqual(JSON.parse(JSON.stringify(state.calls[0].options.data)), {
+    email: 'alice@example.com', password: ' secret ',
+  });
   assert.deepEqual(state.order, ['request', 'redirect']);
   assert.deepEqual(state.redirects, ['/team-d/index.html']);
   assert.equal(state.passwords[0].value, '');
@@ -70,7 +75,8 @@ test('signup sends both passwords to signup API and defaults navigation to local
   await state.submit();
   assert.equal(state.calls[0].endpoint, '/api/auth/signup/');
   assert.deepEqual(JSON.parse(JSON.stringify(state.calls[0].options.data)), {
-    username: 'alice', password1: '123456', password2: '123456',
+    email: 'alice@example.com', username: '山田 太郎',
+    password1: '123456', password2: '123456',
   });
   assert.ok(state.passwords.every(input => input.value === ''));
   assert.deepEqual(state.redirects, ['/']);
@@ -122,9 +128,9 @@ test('pending request prevents double submission', async () => {
 });
 
 test('Firebase login failure does not navigate or clear password', async () => {
-  const state = setup({ request: async () => { throw new Error('ユーザー名またはパスワードが違います。'); } });
+  const state = setup({ request: async () => { throw new Error('メールアドレスまたはパスワードが違います。'); } });
   await state.submit();
-  assert.equal(state.errors.textContent, 'ユーザー名またはパスワードが違います。');
+  assert.equal(state.errors.textContent, 'メールアドレスまたはパスワードが違います。');
   assert.equal(state.passwords[0].value, '123456');
   assert.equal(state.button.disabled, false);
   assert.deepEqual(state.redirects, []);

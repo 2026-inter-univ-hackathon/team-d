@@ -1033,7 +1033,9 @@
     async function initializeApp() {
       try {
         const result = await LoginApi.request('/api/auth/me/');
-        currentUser.textContent = result.user.email;
+        currentUser.textContent = result.user.username
+          ? `${result.user.username}（${result.user.email}）`
+          : result.user.email;
         await refreshEvents();
         await checkReminders();
       } catch (error) {

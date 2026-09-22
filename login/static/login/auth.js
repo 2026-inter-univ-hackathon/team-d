@@ -7,6 +7,7 @@
   const submitButton = form.querySelector('button[type="submit"]');
 
   const fieldLabels = {
+    email: 'メールアドレス',
     username: 'ユーザー名',
     password1: 'パスワード',
     password2: '確認用パスワード',
@@ -32,10 +33,11 @@
       const isSignup = form.dataset.mode === 'signup';
 
       const data = {
-        username: String(inputs.get('username') || '').trim(),
+        email: String(inputs.get('email') || '').trim(),
       };
 
       if (isSignup) {
+        data.username = String(inputs.get('username') || '').trim();
         data.password1 = String(inputs.get('password1') || '');
         data.password2 = String(inputs.get('password2') || '');
       } else {

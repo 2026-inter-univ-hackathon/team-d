@@ -53,8 +53,11 @@ function setup({ user = { id: 'owner-1', email: 'alice@example.com' }, omitClien
 
 test('routes signup and login through Firebase Authentication', async () => {
   const { api, calls } = setup();
-  const signup = { username: 'alice', password1: '123456', password2: '123456' };
-  const login = { username: 'alice', password: '123456' };
+  const signup = {
+    email: 'alice@example.com', username: 'Alice',
+    password1: '123456', password2: '123456',
+  };
+  const login = { email: 'alice@example.com', password: '123456' };
 
   assert.deepEqual(await api.request('/api/auth/signup/', { method: 'POST', data: signup }), {
     user: { id: 'owner-1', email: 'alice@example.com' },

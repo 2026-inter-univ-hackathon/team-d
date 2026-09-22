@@ -6,11 +6,12 @@
     root.FirebaseAuthClient = api;
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, () => {
-  const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{0,31}$/;
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const REQUIRED_CONFIG = ['apiKey', 'authDomain', 'projectId', 'appId'];
   const ERROR_MESSAGES = {
     'auth/email-already-in-use': 'このアカウントはすでに登録されています。',
-    'auth/invalid-credential': 'ユーザー名またはパスワードが違います。',
+    'auth/invalid-email': 'メールアドレスの形式が正しくありません。',
+    'auth/invalid-credential': 'メールアドレスまたはパスワードが違います。',
     'auth/user-disabled': 'このアカウントは利用できません。',
     'auth/weak-password': 'パスワードは6文字以上で入力してください。',
     'auth/too-many-requests': '試行回数が多すぎます。しばらく待ってください。',
@@ -25,19 +26,33 @@
     }
   }
 
-  function accountEmail(username) {
+  function normalizeEmail(email) {
+    if (typeof email !== 'string') {
+      throw new FirebaseAuthError('メールアドレスを入力してください。', 'validation/email');
+    }
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || normalized.length > 254 || !EMAIL_PATTERN.test(normalized)) {
+      throw new FirebaseAuthError(
+        'メールアドレスの形式が正しくありません。',
+        'validation/email'
+      );
+    }
+    return normalized;
+  }
+
+  function normalizeUsername(username) {
     if (typeof username !== 'string') {
       throw new FirebaseAuthError('ユーザー名を入力してください。', 'validation/username');
     }
 
-    const normalized = username.trim().toLowerCase();
-    if (!USERNAME_PATTERN.test(normalized)) {
+    const normalized = username.trim();
+    if (!normalized || normalized.length > 32 || /[\u0000-\u001f\u007f]/.test(normalized)) {
       throw new FirebaseAuthError(
-        'ユーザー名は半角小文字・数字・「.」「-」「_」で入力してください。',
+        'ユーザー名は1〜32文字で入力してください。',
         'validation/username'
       );
     }
-    return `${normalized}@example.com`;
+    return normalized;
   }
 
   function validateConfig(config) {
@@ -55,7 +70,11 @@
     if (!user || typeof user.uid !== 'string' || typeof user.email !== 'string') {
       throw new FirebaseAuthError('ログイン情報を読み込めませんでした。');
     }
-    return { id: user.uid, email: user.email };
+    return {
+      id: user.uid,
+      email: user.email,
+      username: typeof user.displayName === 'string' ? user.displayName : '',
+    };
   }
 
   function normalizeError(error) {
@@ -90,9 +109,10 @@
       throw normalizeError(error);
     });
 
-    async function signup({ username, password1, password2 }) {
+    async function signup({ email: inputEmail, username: inputUsername, password1, password2 }) {
       try {
-        const email = accountEmail(username);
+        const email = normalizeEmail(inputEmail);
+        const username = normalizeUsername(inputUsername);
         if (typeof password1 !== 'string' || password1.length < 6) {
           throw new FirebaseAuthError(
             'パスワードは6文字以上で入力してください。',
@@ -108,15 +128,19 @@
 
         await ready;
         const credential = await auth.createUserWithEmailAndPassword(email, password1);
+        if (!credential.user || typeof credential.user.updateProfile !== 'function') {
+          throw new FirebaseAuthError('ユーザープロフィールを作成できませんでした。');
+        }
+        await credential.user.updateProfile({ displayName: username });
         return { user: formatUser(credential.user) };
       } catch (error) {
         throw normalizeError(error);
       }
     }
 
-    async function login({ username, password }) {
+    async function login({ email: inputEmail, password }) {
       try {
-        const email = accountEmail(username);
+        const email = normalizeEmail(inputEmail);
         if (typeof password !== 'string' || !password) {
           throw new FirebaseAuthError(
             'パスワードを入力してください。',
@@ -160,5 +184,5 @@
     return { signup, login, logout, currentUser, auth };
   }
 
-  return { create, accountEmail, FirebaseAuthError };
+  return { create, normalizeEmail, normalizeUsername, FirebaseAuthError };
 });
