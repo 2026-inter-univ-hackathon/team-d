@@ -194,6 +194,39 @@
       position: absolute;
       box-sizing: border-box;
       pointer-events: auto;
+      padding: 2px 6px;
+      font-size: .78rem;
+      line-height: 1.2;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .timed-event .event-time-badge {
+      font-size: .68rem;
+      opacity: .85;
+      white-space: nowrap;
+      margin-bottom: 1px;
+    }
+
+    .timed-event .event-title-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timed-event.short-event {
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      padding: 0 4px;
+      font-size: .7rem;
+    }
+
+    .timed-event.short-event .event-time-badge {
+      font-size: .65rem;
+      margin-bottom: 0;
     }
 
     .resize-handle {
@@ -380,11 +413,17 @@
           <textarea id="detail-memo" rows="2"></textarea>
           <label>予定のメモ</label>
         </div>
-        <div class="field label border">
-          <input id="detail-duration" type="number" min="1" max="24" step="1">
-          <label>予定の所要時間（時間）</label>
+        <div class="row">
+          <div class="max field label border">
+            <input id="detail-date" type="date">
+            <label>日付</label>
         </div>
-        <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
+          <div class="max field label border">
+            <input id="detail-time" type="time" step="900">
+            <label>開始時刻</label>
+          </div>
+        </div>
+        <p class="muted">開始時刻は15分単位で設定できます。タイムライン表示では予定ブロックの下端をドラッグして所要時間を変更できます。</p>
         <div class="field middle-align">
           <nav>
             <div class="max">
@@ -476,6 +515,47 @@
       return dateStr(new Date());
     }
 
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m]));
+    }
+
+    function timeToHours(timeStr) {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(':');
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      return h + m / 60;
+    }
+
+    function hoursToTime(hours) {
+      let totalMin = Math.round(hours * 60);
+      totalMin = Math.round(totalMin / 15) * 15;
+      let h = Math.floor(totalMin / 60);
+      let m = totalMin % 60;
+      if (h >= 24) {
+        h = 23;
+        m = 45;
+      }
+      return `${pad2(h)}:${pad2(m)}`;
+    }
+
+    function calcEndTime(startTimeStr, durationHours) {
+      if (!startTimeStr) return '';
+      const start = timeToHours(startTimeStr);
+      const end = Math.min(24, start + (durationHours || 1));
+      let totalMin = Math.round(end * 60);
+      totalMin = Math.round(totalMin / 15) * 15;
+      const endH = Math.floor(totalMin / 60);
+      const endM = totalMin % 60;
+      return `${pad2(endH)}:${pad2(endM)}`;
+    }
+
     // ============================================================
     // 状態
     // ============================================================
@@ -499,7 +579,7 @@
     function createEventChip(ev) {
       const chip = document.createElement('div');
       chip.className = `event status-${ev.status.toLowerCase()}`;
-      chip.textContent = ev.title || '(無題)';
+      chip.textContent = `${ev.title || '(無題)'}`;
       chip.draggable = true;
       chip.dataset.id = ev.id;
       chip.title = ev.memo || ev.title;
@@ -695,7 +775,7 @@
       // 時刻ありの予定を、時間帯が重ならないよう横のレーンに振り分けて重ねて配置する
       const timed = events
         .filter(ev => ev.time)
-        .map(ev => ({ ev, start: parseInt(ev.time, 10), duration: ev.duration || 1 }));
+        .map(ev => ({ ev, start: timeToHours(ev.time), duration: ev.duration || 1 }));
       const { laneOf, laneCount } = assignLanes(timed);
 
       const overlay = document.createElement('div');
@@ -706,7 +786,7 @@
         const widthPct = 100 / laneCount;
         const chip = createTimedEventChip(ev, {
           top: (start * HOUR_H) + 'px',
-          height: (duration * HOUR_H - 2) + 'px',
+          height: Math.max(14, (duration * HOUR_H - 2)) + 'px',
           left: `calc(${lane * widthPct}%)`,
           width: `calc(${widthPct}% - 4px)`,
         });
@@ -723,12 +803,14 @@
         const id = e.dataTransfer.getData('text/plain');
         if (!id) return;
         const y = e.clientY - timelineHoursEl.getBoundingClientRect().top;
-        const hour = Math.min(23, Math.max(0, Math.floor(y / HOUR_H)));
+        const totalQuarters = Math.min(24 * 4 - 1, Math.max(0, Math.floor(y / (HOUR_H / 4))));
+        const hour = Math.floor(totalQuarters / 4);
+        const minute = (totalQuarters % 4) * 15;
         const evs = loadEvents();
         const ev = evs.find(e2 => e2.id === id);
         if (!ev) return;
         ev.date = dayStr;
-        ev.time = `${pad2(hour)}:00`;
+        ev.time = `${pad2(hour)}:${pad2(minute)}`;
         saveEvents(evs);
         renderAll();
         if (wasDialogOpenOnDrag) {
@@ -764,6 +846,15 @@
     function createTimedEventChip(ev, style) {
       const chip = createEventChip(ev);
       chip.classList.add('timed-event');
+      const dur = ev.duration || 1;
+      if (dur <= 0.25) {
+        chip.classList.add('short-event');
+      }
+      const endTime = calcEndTime(ev.time, dur);
+      chip.innerHTML = `
+        <span class="event-time-badge">${ev.time} - ${endTime}</span>
+        <span class="event-title-text">${escapeHtml(ev.title || '(無題)')}</span>
+      `;
       Object.assign(chip.style, style);
 
       const handle = document.createElement('div');
@@ -788,14 +879,25 @@
 
       const startY = e.clientY;
       const startDuration = ev.duration || 1;
-      const startHour = parseInt(ev.time, 10);
-      const maxDuration = 24 - startHour;
+      const startHours = timeToHours(ev.time);
+      const maxDuration = Math.max(0.25, 24 - startHours);
       let finalDuration = startDuration;
 
+      const timeBadge = chipEl.querySelector('.event-time-badge');
+
       function onMove(moveEvent) {
-        const deltaHours = Math.round((moveEvent.clientY - startY) / HOUR_H);
-        finalDuration = Math.min(maxDuration, Math.max(1, startDuration + deltaHours));
-        chipEl.style.height = (finalDuration * HOUR_H - 2) + 'px';
+        const deltaQuarters = Math.round((moveEvent.clientY - startY) / (HOUR_H / 4));
+        const rawDuration = startDuration + deltaQuarters * 0.25;
+        finalDuration = Math.min(maxDuration, Math.max(0.25, Math.round(rawDuration * 4) / 4));
+        chipEl.style.height = Math.max(14, (finalDuration * HOUR_H - 2)) + 'px';
+        if (finalDuration <= 0.25) {
+          chipEl.classList.add('short-event');
+        } else {
+          chipEl.classList.remove('short-event');
+        }
+        if (timeBadge) {
+          timeBadge.textContent = `${ev.time} - ${calcEndTime(ev.time, finalDuration)}`;
+        }
       }
       function onUp() {
         document.removeEventListener('pointermove', onMove);
@@ -881,9 +983,10 @@
       pendingStatus = null;
       const ev = loadEvents().find(e => e.id === id);
       if (!ev) return;
-      document.getElementById('detail-title').value = ev.title;
+      document.getElementById('detail-title').value = ev.title || '';
       document.getElementById('detail-memo').value = ev.memo || '';
-      document.getElementById('detail-duration').value = ev.duration || 1;
+      document.getElementById('detail-date').value = ev.date || '';
+      document.getElementById('detail-time').value = ev.time || '';
       highlightStatus(ev.status);
       const calendarSection = document.getElementById('calendar-section');
       calendarSection.className = 's12 m7 l8';
@@ -930,8 +1033,37 @@
       if (!ev) return;
       ev.title = document.getElementById('detail-title').value.trim() || ev.title;
       ev.memo = document.getElementById('detail-memo').value;
-      const durationInput = parseInt(document.getElementById('detail-duration').value, 10);
-      ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
+
+      const dateVal = document.getElementById('detail-date').value;
+      const timeVal = document.getElementById('detail-time').value;
+
+      if (dateVal) {
+        ev.date = dateVal;
+        if (timeVal) {
+          const [h, m] = timeVal.split(':').map(Number);
+          const snappedM = Math.round((m || 0) / 15) * 15;
+          if (snappedM >= 60) {
+            ev.time = `${pad2((h + 1) % 24)}:00`;
+          } else {
+            ev.time = `${pad2(h)}:${pad2(snappedM)}`;
+          }
+        } else {
+          ev.time = null;
+        }
+      } else if (timeVal) {
+        ev.date = dateStr(viewDate);
+        const [h, m] = timeVal.split(':').map(Number);
+        const snappedM = Math.round((m || 0) / 15) * 15;
+        if (snappedM >= 60) {
+          ev.time = `${pad2((h + 1) % 24)}:00`;
+        } else {
+          ev.time = `${pad2(h)}:${pad2(snappedM)}`;
+        }
+      } else {
+        ev.date = null;
+        ev.time = null;
+      }
+
       if (pendingStatus) ev.status = pendingStatus;
       pendingStatus = null;
       saveEvents(events);
