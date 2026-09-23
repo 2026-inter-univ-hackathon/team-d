@@ -589,9 +589,28 @@
 <body>
   <main>
 
-    <h1>助じゅ～る</h1>
+    <div class="row" style="justify-content:space-between">
+      <h1>助じゅ～る</h1>
+      <div class="row">
+        <span id="current-user"></span>
+        <button id="logout-btn" type="button" class="secondary">ログアウト</button>
+      </div>
+    </div>
     <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
 
+    <div class="row" style="margin-bottom:16px">
+      <p id="sync-message" role="status" aria-live="polite" style="flex:1">予定を読み込んでいます…</p>
+      <button id="reload-events" type="button" class="secondary">予定を再読み込み</button>
+    </div>
+    <details style="margin-bottom:16px" id="import-panel">
+      <summary>以前の予定を取り込む</summary>
+      <p>以前のブラウザで index.html を直接開き、書き出したJSONを選んでください。このアカウントに追加します。</p>
+      <label for="import-file">予定のJSONファイル（1MB・1000件以内）</label>
+      <input id="import-file" type="file" accept=".json,application/json">
+      <p id="import-preview" role="status"></p>
+      <button id="import-submit" type="button" disabled>このアカウントに取り込む</button>
+    </details>
+    <div id="calendar-content" hidden>
     <section>
       <div class="toolbar">
         <div class="row">
@@ -817,12 +836,48 @@
       </div>
     </section>
 
+    </div>
   </main>
 
+  <script src="static/legacy-export.js"></script>
+  <script src="static/app-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="static/firebase-config.js"></script>
+  <script src="static/firebase-app.js"></script>
+  <script src="static/login/firebase-auth.js"></script>
+  <script src="static/firebase-events.js"></script>
+  <script src="static/login/api.js"></script>
+  <script src="static/calendar-store.js"></script>
   <script>
+    if (window.location.protocol !== 'file:') {
     // ============================================================
-    // データの保存と読み込み（localStorage）
+    // データの保存と読み込み（Firebase Authentication / Firestore）
     // ============================================================
+    const REMINDER_DAYS = 3;
+    const HOUR_H = 32;
+    const syncMessage = document.getElementById('sync-message');
+    const calendarContent = document.getElementById('calendar-content');
+    const reloadButton = document.getElementById('reload-events');
+    const currentUser = document.getElementById('current-user');
+    const logoutButton = document.getElementById('logout-btn');
+    const loginUrl = window.APP_CONFIG?.loginUrl || '/login/';
+    let loading = false;
+
+    async function apiRequest(url, method = 'GET', data) {
+      return LoginApi.request(url, { method, data });
+    }
+
+    window.addEventListener('auth-required', () => {
+      window.location.assign(loginUrl);
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      if (store.busy || loading) return;
+      logoutButton.disabled = true;
+      setSync('ログアウトしています…');
     const STORAGE_KEY = 'tentative_calendar_events';
     const FAVORITES_KEY = 'tentative_calendar_favorites';
     const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
@@ -837,16 +892,109 @@
 
     function loadEvents() {
       try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        return Array.isArray(data) ? data : [];
-      } catch {
-        return [];
+        await LoginApi.request('/api/auth/logout/', { method: 'POST' });
+        window.location.assign(loginUrl);
+      } catch (error) {
+        if (error.status !== 401) {
+          setSync(error.message, true);
+          logoutButton.disabled = false;
+        }
+      }
+    });
+
+    const store = new CalendarStore(apiRequest);
+    function loadEvents() { return store.load(); }
+    function setSync(message, error = false) {
+      syncMessage.textContent = message;
+      syncMessage.style.color = error ? '#a32626' : '#555';
+    }
+    function lockCalendar(locked) {
+      calendarContent.inert = locked;
+      calendarContent.setAttribute('aria-busy', String(locked));
+      reloadButton.disabled = locked;
+      document.getElementById('import-panel').inert = locked;
+    }
+    async function saveEvents(events) {
+      if (store.busy || loading || !store.ready) return false;
+      lockCalendar(true);
+      setSync('保存しています…');
+      try {
+        await store.save(events);
+        setSync('保存しました。');
+        return true;
+      } catch (error) {
+        setSync(error.message, true);
+        renderAll();
+        return false;
+      } finally {
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
       }
     }
-
-    function saveEvents(events) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    async function refreshEvents() {
+      if (store.busy || loading) return;
+      loading = true;
+      lockCalendar(true);
+      setSync('予定を読み込んでいます…');
+      try {
+        await store.refresh();
+        closeDetail();
+        renderAll();
+        calendarContent.hidden = false;
+        setSync('予定を読み込みました。');
+      } catch (error) {
+        store.ready = false;
+        setSync(error.message, true);
+      } finally {
+        loading = false;
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
+      }
     }
+    reloadButton.addEventListener('click', refreshEvents);
+    let importRecords = null;
+    const importFile = document.getElementById('import-file');
+    const importPreview = document.getElementById('import-preview');
+    const importSubmit = document.getElementById('import-submit');
+    importFile.addEventListener('change', async () => {
+      importRecords = null;
+      importSubmit.disabled = true;
+      const file = importFile.files[0];
+      if (!file) { importPreview.textContent = ''; return; }
+      try {
+        if (file.size > 1024 * 1024) throw new Error('1MB以内のJSONファイルを選んでください。');
+        const records = JSON.parse(await file.text());
+        if (!Array.isArray(records) || records.length > 1000) throw new Error('予定の配列（1000件以内）を選んでください。');
+        importRecords = records;
+        importPreview.textContent = `${records.length}件の予定を追加します。同じIDの取り込み済み予定はスキップします。`;
+        importSubmit.disabled = !records.length;
+      } catch (error) { importPreview.textContent = error.message; }
+    });
+    importSubmit.addEventListener('click', async () => {
+      if (!importRecords || store.busy || loading) return;
+      loading = true;
+      lockCalendar(true);
+      setSync('予定を取り込んでいます…');
+      try {
+        const result = await apiRequest('/api/events/import/', 'POST', { events: importRecords });
+        await store.refresh();
+        renderAll();
+        calendarContent.hidden = false;
+        setSync(`${result.imported}件を取り込みました。${result.skipped}件は取り込み済みです。`);
+        importRecords = null;
+        importSubmit.disabled = true;
+        importFile.value = '';
+        importPreview.textContent = '';
+      } catch (error) {
+        store.ready = false;
+        try { await store.refresh(); renderAll(); } catch { /* Explicit reload remains available. */ }
+        setSync(error.message, true);
+      } finally {
+        loading = false;
+        lockCalendar(false);
+        calendarContent.inert = !store.ready;
+      }
+    });
 
     function loadFavorites() {
       try {
@@ -991,18 +1139,18 @@
     }
 
     function addDropHandlers(el, onDrop) {
-      el.addEventListener('dragover', (e) => {
+      el.ondragover = (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         el.classList.add('drag-over');
-      });
-      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
-      el.addEventListener('drop', (e) => {
+      };
+      el.ondragleave = () => el.classList.remove('drag-over');
+      el.ondrop = (e) => {
         e.preventDefault();
         el.classList.remove('drag-over');
         const id = e.dataTransfer.getData('text/plain');
-        if (id) onDrop(id);
-      });
+        if (id && store.ready && !store.busy && !loading) onDrop(id);
+      };
     }
 //
     // ============================================================
@@ -1021,13 +1169,13 @@
       untimed.forEach(ev => trayEl.appendChild(createEventChip(ev)));
     }
 
-    addDropHandlers(trayEl, (id) => {
+    addDropHandlers(trayEl, async (id) => {
       const events = loadEvents();
       const ev = events.find(e => e.id === id);
       if (!ev) return;
       ev.date = null;
       ev.time = null;
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       renderAll();
     });
 
@@ -1068,12 +1216,12 @@
 
         events.filter(ev => ev.date === cellStr).forEach(ev => cell.appendChild(createEventChip(ev)));
 
-        addDropHandlers(cell, (id) => {
+        addDropHandlers(cell, async (id) => {
           const evs = loadEvents();
           const ev = evs.find(e => e.id === id);
           if (!ev) return;
           ev.date = cellStr; // 月表示では時刻は付けない
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -1100,13 +1248,13 @@
         timelineAlldayEl.appendChild(hint);
       }
       untimed.forEach(ev => timelineAlldayEl.appendChild(createEventChip(ev)));
-      addDropHandlers(timelineAlldayEl, (id) => {
+      addDropHandlers(timelineAlldayEl, async (id) => {
         const evs = loadEvents();
         const ev = evs.find(e => e.id === id);
         if (!ev) return;
         ev.date = dayStr;
         ev.time = null;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
       });
 
@@ -1125,13 +1273,13 @@
         slot.className = 'hour-events';
         row.appendChild(slot);
 
-        addDropHandlers(row, (id) => {
+        addDropHandlers(row, async (id) => {
           const evs = loadEvents();
           const ev = evs.find(e => e.id === id);
           if (!ev) return;
           ev.date = dayStr;
           ev.time = `${pad2(h)}:00`;
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -1164,7 +1312,7 @@
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
       });
-      overlay.addEventListener('drop', (e) => {
+      overlay.addEventListener('drop', async (e) => {
         e.preventDefault();
         const id = e.dataTransfer.getData('text/plain');
         if (!id) return;
@@ -1175,7 +1323,7 @@
         if (!ev) return;
         ev.date = dayStr;
         ev.time = `${pad2(hour)}:00`;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
       });
       timelineHoursEl.appendChild(overlay);
@@ -1250,11 +1398,12 @@
         finalDuration = Math.min(maxDuration, Math.max(1, startDuration + deltaHours));
         chipEl.style.height = (finalDuration * HOUR_H - 2) + 'px';
       }
-      function onUp() {
+      async function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         if (finalDuration !== startDuration || ev.isEndTimeUnset) {
           ev.duration = finalDuration;
+          if (!await saveEvents(events)) return;
           ev.endTime = `${pad2(startHour + finalDuration)}:00`;
           ev.isEndTimeUnset = false;
           saveEvents(events);
@@ -1850,7 +1999,7 @@
     // ============================================================
     // 予定の追加（常にトレイへ：日時はドラッグで割り当てる）
     // ============================================================
-    document.getElementById('add-event').addEventListener('click', () => {
+    document.getElementById('add-event').addEventListener('click', async () => {
       const input = document.getElementById('new-title');
       const title = input.value.trim();
       if (!title) return;
@@ -1866,6 +2015,7 @@
         createdAt: Date.now(),
         remindedOn: null,
       });
+      if (!await saveEvents(events)) return;
       saveEvents(events);
       recordHistory(title);
       input.value = '';
@@ -2276,7 +2426,7 @@
       });
     });
 
-    document.getElementById('detail-save').addEventListener('click', () => {
+    document.getElementById('detail-save').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
@@ -2296,6 +2446,7 @@
       ev.isEndTimeUnset = !!(dateVal && timeVal && !endTimeVal);
 
       if (pendingStatus) ev.status = pendingStatus;
+      if (!await saveEvents(events)) return;
       pendingStatus = null;
       saveEvents(events);
       recordHistory(ev.title, ev.memo, ev.duration, ev.time || '');
@@ -2309,13 +2460,14 @@
       showFeedback(ev.date ? `「${ev.title}」の日時を保存しました 📅` : `「${ev.title}」を保存しました（トレイ内）`);
     });
 
-    document.getElementById('detail-clear-date').addEventListener('click', () => {
+    document.getElementById('detail-clear-date').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
       if (!ev) return;
       ev.date = null;
       ev.time = null;
+      if (!await saveEvents(events)) return;
       ev.endTime = null;
       ev.isEndTimeUnset = false;
       saveEvents(events);
@@ -2324,10 +2476,10 @@
       showFeedback(`「${ev.title}」の日時をクリアし、トレイに戻しました`);
     });
 
-    document.getElementById('detail-delete').addEventListener('click', () => {
+    document.getElementById('detail-delete').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents().filter(e => e.id !== selectedEventId);
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       closeDetail();
       renderAll();
     });
@@ -2398,7 +2550,8 @@
       });
     });
 
-    function checkReminders() {
+    async function checkReminders() {
+      if (!store.ready || store.busy || loading) return;
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       const events = loadEvents();
       const now = Date.now();
@@ -2415,11 +2568,13 @@
         ev.remindedOn = today;
         changed = true;
       });
-      if (changed) saveEvents(events);
+      if (changed) await saveEvents(events);
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkReminders();
+      if (document.visibilityState === 'visible' && !selectedEventId) {
+        refreshEvents().then(checkReminders);
+      }
     });
 
     // ============================================================
@@ -2429,6 +2584,19 @@
       renderTray();
       if (view === 'month') renderMonth();
       else renderTimeline();
+    }
+
+    async function initializeApp() {
+      try {
+        const result = await LoginApi.request('/api/auth/me/');
+        currentUser.textContent = result.user.username
+          ? `${result.user.username}（${result.user.email}）`
+          : result.user.email;
+        await refreshEvents();
+        await checkReminders();
+      } catch (error) {
+        if (error.status !== 401) setSync(error.message, true);
+      }
     }
 
     // ============================================================
@@ -2454,8 +2622,9 @@
 
     renderFavorites();
     updateNotifyBtn();
-    renderAll();
-    checkReminders();
+    initializeApp();
+    window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
+    }
   </script>
 </body>
 
