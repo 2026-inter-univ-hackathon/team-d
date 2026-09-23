@@ -17,6 +17,23 @@
 
   let submitting = false;
 
+  function notify(box, text) {
+    if (!box) return;
+    box.textContent = text;
+    if (!text) {
+      box.classList?.remove?.('active');
+      return;
+    }
+    if (typeof ui === 'function') {
+      ui(box);
+    } else {
+      box.classList?.add?.('active');
+      if (typeof setTimeout === 'function') {
+        setTimeout(() => box.classList?.remove?.('active'), 5000);
+      }
+    }
+  }
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -25,8 +42,8 @@
 
     submitting = true;
     submitButton.disabled = true;
-    errorBox.textContent = '';
-    infoBox.textContent = '';
+    notify(errorBox, '');
+    notify(infoBox, '');
 
     const originalLabel = submitButton.textContent;
     submitButton.textContent = '処理しています…';
@@ -64,7 +81,7 @@
       );
 
       if (isSignup && result.verificationSent) {
-        infoBox.textContent = '確認メールを送信しました。メール内のリンクを開いてからログインしてください。';
+        notify(infoBox, '確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
         return;
       }
 
@@ -86,8 +103,7 @@
         }
       }
 
-      errorBox.textContent =
-        messages.join('\n') || error.message || '処理に失敗しました。';
+      notify(errorBox, messages.join('\n') || error.message || '処理に失敗しました。');
     } finally {
       submitting = false;
       submitButton.disabled = false;
@@ -101,8 +117,8 @@
       submitting = true;
       submitButton.disabled = true;
       resetButton.disabled = true;
-      errorBox.textContent = '';
-      infoBox.textContent = '';
+      notify(errorBox, '');
+      notify(infoBox, '');
       const originalLabel = resetButton.textContent;
       resetButton.textContent = '送信しています…';
 
@@ -112,9 +128,9 @@
           method: 'POST',
           data: { email: String(inputs.get('email') || '').trim() },
         });
-        infoBox.textContent = '登録状況にかかわらず、再設定可能な場合はメールを送信しました。';
+        notify(infoBox, '登録状況にかかわらず、再設定可能な場合はメールを送信しました。');
       } catch (error) {
-        errorBox.textContent = error.message || '処理に失敗しました。';
+        notify(errorBox, error.message || '処理に失敗しました。');
       } finally {
         submitting = false;
         submitButton.disabled = false;
