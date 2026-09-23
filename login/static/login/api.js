@@ -11,9 +11,16 @@ window.LoginApi = (() => {
 
   function initializeClients() {
     if (clients) return clients;
-    if (!window.FirebaseAuthClient || !window.FirebaseEventsClient) {
+    if (!window.FirebaseAppClient || !window.FirebaseAuthClient || !window.FirebaseEventsClient) {
       throw new ApiError('Firebaseの接続プログラムを読み込めませんでした。', 0);
     }
+
+    window.FirebaseAppClient.initialize({
+      firebase: window.firebase,
+      config: window.FIREBASE_CONFIG,
+      appCheckConfig: window.FIREBASE_APP_CHECK_CONFIG,
+      hostname: window.location?.hostname,
+    });
 
     const authClient = window.FirebaseAuthClient.create({
       firebase: window.firebase,

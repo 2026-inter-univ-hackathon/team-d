@@ -9,10 +9,29 @@
 3. Firestore Databaseを本番環境モードで作成します。
 4. `firebase/firestore.rules` の内容をFirestoreの「ルール」へ貼り付けて公開します。
 5. Authenticationの「Settings」→「Authorized domains」に、ローカル確認用の `localhost` と `127.0.0.1` を追加します。
+6. Google CloudのFraud Defenseで、スコアベースのWebキーに `2026-inter-univ-hackathon.github.io` を登録します。
+7. Firebase Consoleの「App Check」でWebアプリをreCAPTCHA Enterpriseへ登録し、同じサイトキーを設定します。
 
 GitHub Pagesへ公開するときは、同じAuthorized domainsへ `GitHubユーザー名.github.io` を追加します。パスの `/リポジトリ名/` は含めません。
 
-FirebaseのWeb設定値はブラウザへ公開される値です。サービスアカウント秘密鍵、SMTPパスワード、メールサービスの秘密APIキーは `firebase-config.js` に追加しません。
+FirebaseのWeb設定値とreCAPTCHA Enterpriseのサイトキーはブラウザへ公開される値です。サービスアカウント秘密鍵、SMTPパスワード、メールサービスの秘密APIキー、App Checkのデバッグトークンは `firebase-config.js` に追加しません。
+
+## App Checkの設定
+
+`static/firebase-config.js` の `FIREBASE_APP_CHECK_CONFIG.siteKey` には、Google Cloudで作成してFirebase App Checkへ登録したサイトキーを設定します。画面はFirebase App CheckをAuthenticationとFirestoreより先に初期化し、トークンを自動更新します。
+
+最初はFirebase ConsoleのApp Checkで強制適用をオフにします。正常なリクエストが記録されることを確認してから、Firestore、Authenticationの順で強制適用を有効にします。強制適用を有効にすると、有効なApp Checkトークンがない通信は拒否されます。
+
+### ローカル確認用のデバッグトークン
+
+`localhost` または `127.0.0.1` で開いた場合だけ、画面はApp Checkのデバッグプロバイダーを有効にします。
+
+1. 開発者ツールのConsoleを開いた状態でローカル画面を読み込みます。
+2. Consoleに表示されたApp Checkのデバッグトークンをコピーします。
+3. Firebase Consoleの「App Check」→対象Webアプリのメニュー→「デバッグトークンを管理」で登録します。
+4. 画面を再読み込みし、ログインと予定操作を確認します。
+
+デバッグトークンはブラウザ内に保存されます。ソースコード、Git、チャットには貼り付けません。GitHub Pagesではデバッグプロバイダーを使用しません。また、本番用reCAPTCHAキーの許可ドメインへ `localhost` を追加しません。
 
 ## Django経由でローカル確認する
 
@@ -89,5 +108,6 @@ py -m http.server 8080 --directory dist
 5. ログアウトし、同じメールアドレスとパスワードで再ログインします。
 6. ログイン画面の「パスワード再設定メールを送る」を確認します。
 7. 別アカウントから最初のアカウントの予定が見えないことを確認します。
+8. Firebase ConsoleのApp Checkメトリクスで、FirestoreとAuthenticationの有効なリクエストを確認します。
 
-予定の通知メール、App Check、GitHub Pagesへの公開は別工程です。
+予定の通知メール、App Checkの強制適用、GitHub Pagesへの公開は別工程です。

@@ -13,7 +13,7 @@ class PagesBuildTests(SimpleTestCase):
             expected = {
                 ".nojekyll", "index.html", "login.html", "signup.html",
                 "static/app-config.js", "static/calendar-store.js", "static/legacy-export.js",
-                "static/firebase-config.js", "static/firebase-events.js",
+                "static/firebase-app.js", "static/firebase-config.js", "static/firebase-events.js",
                 "static/login/api.js", "static/login/auth.js", "static/login/auth.css",
                 "static/login/firebase-auth.js",
             }
@@ -33,6 +33,8 @@ class PagesBuildTests(SimpleTestCase):
             login = (output / "login.html").read_text()
             self.assertIn('href="signup.html"', login)
             self.assertIn('src="static/firebase-config.js"', login)
+            self.assertIn('firebase-app-check-compat.js', login)
+            self.assertIn('src="static/firebase-app.js"', login)
             self.assertIn('src="static/login/firebase-auth.js"', login)
             self.assertIn('src="static/login/api.js"', login)
             self.assertIn('data-success-url="index.html"', login)
@@ -49,11 +51,24 @@ class PagesBuildTests(SimpleTestCase):
                 config.write_text(
                     "window.FIREBASE_CONFIG = {\n"
                     + "\n".join(f"  {key}: '{value}'," for key, value in values.items())
-                    + "\n};\n",
+                    + "\n};\nwindow.FIREBASE_APP_CHECK_CONFIG = { siteKey: 'site-key' };\n",
                     encoding="utf-8",
                 )
                 with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, missing):
                     validate_firebase_config(config)
+
+    def test_firebase_config_requires_app_check_site_key(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            config = Path(directory) / "firebase-config.js"
+            config.write_text(
+                "window.FIREBASE_CONFIG = {\n"
+                "  apiKey: 'key', authDomain: 'demo.firebaseapp.com',\n"
+                "  projectId: 'demo', appId: 'app',\n"
+                "};\nwindow.FIREBASE_APP_CHECK_CONFIG = { siteKey: '' };\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "siteKey"):
+                validate_firebase_config(config)
 
     def test_refuses_output_outside_project(self):
         with tempfile.TemporaryDirectory() as directory:

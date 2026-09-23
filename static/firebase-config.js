@@ -6,3 +6,8 @@ window.FIREBASE_CONFIG = Object.freeze({
   projectId: 'nepp-sukejuru-f8c30',
   appId: '1:1089043998006:web:6f7ee37dbf0e07ccfeff97',
 });
+
+// reCAPTCHA Enterpriseのサイトキーはブラウザへ公開される設定値です。
+window.FIREBASE_APP_CHECK_CONFIG = Object.freeze({
+  siteKey: '6LdeJMotAAAAADq0D87EUdtvvGA9S0OZkcibAs34',
+});

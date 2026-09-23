@@ -30,8 +30,13 @@ function setup({ user = { id: 'owner-1', email: 'alice@example.com' }, omitClien
   Object.assign(window, {
     firebase: { firestore: () => db },
     FIREBASE_CONFIG: { apiKey: 'key', authDomain: 'demo.firebaseapp.com', projectId: 'demo', appId: 'app' },
+    FIREBASE_APP_CHECK_CONFIG: { siteKey: 'site-key' },
+    location: { hostname: 'localhost' },
   });
   if (!omitClients) {
+    window.FirebaseAppClient = {
+      initialize(options) { calls.push(['initialize-app', options]); },
+    };
     window.FirebaseAuthClient = {
       create(options) { calls.push(['initialize-auth', options]); return authClient; },
     };
@@ -70,6 +75,11 @@ test('routes signup and login through Firebase Authentication', async () => {
     ['signup', signup], ['login', login],
   ]);
   assert.equal(calls.filter((call) => call[0] === 'initialize-auth').length, 1);
+  assert.equal(calls.filter((call) => call[0] === 'initialize-app').length, 1);
+  assert.ok(
+    calls.findIndex((call) => call[0] === 'initialize-app')
+      < calls.findIndex((call) => call[0] === 'initialize-auth')
+  );
 });
 
 test('restores the Firebase user and requests login when no session exists', async () => {

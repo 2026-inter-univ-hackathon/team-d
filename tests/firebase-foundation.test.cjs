@@ -20,8 +20,14 @@ test('Firebase web config exposes only the four expected public settings', () =>
     ['apiKey', 'authDomain', 'projectId', 'appId']
   );
   assert.equal(Object.isFrozen(context.window.FIREBASE_CONFIG), true);
+  assert.deepEqual(
+    Object.keys(context.window.FIREBASE_APP_CHECK_CONFIG),
+    ['siteKey']
+  );
+  assert.equal(Object.isFrozen(context.window.FIREBASE_APP_CHECK_CONFIG), true);
   assert.equal(source.includes('serviceAccount'), false);
   assert.equal(source.includes('private_key'), false);
+  assert.equal(source.includes('FIREBASE_APPCHECK_DEBUG_TOKEN'), false);
 });
 
 test('Firestore rules restrict every event operation to its authenticated owner', () => {

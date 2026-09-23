@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUTPUT = ROOT / "dist"
 FIREBASE_CONFIG_FILE = ROOT / "static" / "firebase-config.js"
 REQUIRED_FIREBASE_KEYS = ("apiKey", "authDomain", "projectId", "appId")
+REQUIRED_APP_CHECK_KEYS = ("siteKey",)
 
 
 def validate_firebase_config(path=FIREBASE_CONFIG_FILE):
@@ -19,6 +20,11 @@ def validate_firebase_config(path=FIREBASE_CONFIG_FILE):
         match = re.search(rf"\b{key}\s*:\s*(['\"])(.*?)\1", source)
         if not match or not match.group(2).strip():
             raise ValueError(f"Firebase設定の {key} を入力してください。")
+        values[key] = match.group(2).strip()
+    for key in REQUIRED_APP_CHECK_KEYS:
+        match = re.search(rf"\b{key}\s*:\s*(['\"])(.*?)\1", source)
+        if not match or not match.group(2).strip():
+            raise ValueError(f"Firebase App Check設定の {key} を入力してください。")
         values[key] = match.group(2).strip()
     return values
 
