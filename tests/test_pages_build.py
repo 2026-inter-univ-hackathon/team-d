@@ -1,12 +1,11 @@
 import tempfile
+import unittest
 from pathlib import Path
-
-from django.test import SimpleTestCase
 
 from scripts.build_pages import ROOT, build, validate_firebase_config
 
 
-class PagesBuildTests(SimpleTestCase):
+class PagesBuildTests(unittest.TestCase):
     def test_build_contains_only_firebase_static_site_files(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as directory:
             output = build(Path(directory) / "site")

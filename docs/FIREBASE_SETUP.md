@@ -33,23 +33,29 @@ FirebaseのWeb設定値とreCAPTCHA Enterpriseのサイトキーはブラウザ�
 
 デバッグトークンはブラウザ内に保存されます。ソースコード、Git、チャットには貼り付けません。GitHub Pagesではデバッグプロバイダーを使用しません。また、本番用reCAPTCHAキーの許可ドメインへ `localhost` を追加しません。
 
-## Django経由でローカル確認する
+## ローカルで確認する
 
-Mac・Linuxでは、リポジトリのルートで次を実行します。
+Pythonの標準機能だけでGitHub Pages用ファイルを生成し、ローカルサーバーを起動します。Djangoや追加ライブラリのインストールは不要です。
+
+Mac・Linuxでは、リポジトリのルートで次を実行します。Macでは `start.command` をダブルクリックしても起動できます。
 
 ```bash
-.venv/bin/python manage.py runserver
+python3 scripts/run_local.py
 ```
 
 Windows PowerShellでは次を実行します。
 
 ```powershell
-.\.venv\Scripts\python.exe manage.py runserver
+py scripts\run_local.py
 ```
 
-ポート8000が使用中の場合は、コマンドの末尾に `8001` を追加します。ブラウザで `http://127.0.0.1:8000/signup/` または指定したポートのURLを開きます。
+ブラウザで `http://127.0.0.1:8080/login.html` が自動的に開きます。ポート8080が使用中の場合は、次のように別の番号を指定します。
 
-Djangoはこの確認方法ではHTMLを配信するためにだけ使用します。新規登録・ログインはFirebase Authentication、予定保存はFirestoreが処理します。
+```bash
+python3 scripts/run_local.py --port 8090
+```
+
+Windowsでは `py scripts\run_local.py --port 8090` です。新規登録・ログインはFirebase Authentication、予定保存はFirestoreが処理します。
 
 ## GitHub Pages用ファイルを生成する
 

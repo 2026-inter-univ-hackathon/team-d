@@ -12,9 +12,12 @@
 ## 使った技術
 
 - HTML / CSS / JavaScript（素のまま）
-- データの保存: localStorage
+- Firebase Authentication
+- Cloud Firestore
+- Firebase App Check
+- GitHub Pages
 
-（**9/4 時点の構成です。** 開発期間で変えたら、ここも書き換えてください）
+予定はログインしたユーザーごとにCloud Firestoreへ保存します。
 
 ## どう開発したか
 
@@ -32,7 +35,13 @@
 
 ## 動かし方
 
-`index.html` をブラウザで開いてください。ビルドやインストールは不要です。
+Python 3がある環境で、次のコマンドを実行します。追加ライブラリのインストールは不要です。
+
+```bash
+python3 scripts/run_local.py
+```
+
+Windowsでは `py scripts\run_local.py` を実行します。起動後、ブラウザで `http://127.0.0.1:8080/login.html` を開きます。
 
 ## AI に任せなかった部分
 
@@ -44,9 +53,9 @@
 | --- | --- |
 |  |  |
 
-## Django・SQLite版の起動手順
+## 旧Django・SQLite版
 
-新規登録・ログイン機能を追加した版の起動方法と仕様は、[Django・SQLite版の説明](docs/DJANGO_SETUP.md)を参照してください。
+以前のDjango・SQLite版の記録は、[Django・SQLite版の説明](docs/DJANGO_SETUP.md)を参照してください。現在の画面はDjangoを使用しません。
 
 ## Firebase・GitHub Pages版
 
