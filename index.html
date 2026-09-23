@@ -7,41 +7,6 @@
   <title>助じゅ～る</title>
   <link href="css/beer.min.css" rel="stylesheet">
   <style>
-    #detail-section {
-      align-self: start;
-    }
-
-    .lead {
-      color: #666;
-      margin: 0 0 24px;
-    }
-
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .muted {
-      color: #666;
-      font-size: .9rem;
-    }
-
-    /* ---------------- toolbar ---------------- */
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    #current-label {
-      min-width: 8em;
-      text-align: center;
-    }
-
     /* ---------------- tray ---------------- */
     #tray {
       display: flex;
@@ -288,10 +253,6 @@
       opacity: .95;
     }
 
-    #detail-section .row {
-      margin-top: 12px;
-    }
-
     .add-button {
       position: fixed;
       bottom: 24px;
@@ -311,6 +272,10 @@
       height: 48px;
     }
 
+    .snackbar {
+      z-index: 10000;
+    }
+
     /* --- mobile device --- */
     @media (max-width: 768px) {
       body {
@@ -325,8 +290,6 @@
       }
 
       /* カレンダー以外のコンテンツには自然な左右余白を確保 */
-      h1,
-      .lead,
       section:not(#calendar-section) {
         margin-left: 8px;
         margin-right: 8px;
@@ -382,6 +345,11 @@
       border-radius: 6px;
       padding: 8px 12px;
       margin-bottom: 12px;
+    }
+
+    #detail-section {
+      display: none;
+      transition: all var(--speed2);
     }
 
     .favorites-header {
@@ -465,48 +433,30 @@
     }
 
     .history-dropdown {
+      display: none;
       position: absolute;
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      border-radius: 0 0 16px 16px;
+      background: var(--surface);
       z-index: 100;
       max-height: 230px;
       overflow-y: auto;
     }
 
-    .history-header {
-      padding: 6px 12px;
-      font-size: .75rem;
-      font-weight: bold;
-      color: #666;
-      background: #f7fafc;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
     .history-item {
+      border-radius: 0;
       padding: 8px 12px;
+      height: 48px;
       font-size: .85rem;
       cursor: pointer;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #f0f0f0;
       transition: background .15s;
     }
 
-    .history-item:last-child {
-      border-bottom: none;
-    }
-
     .history-item:hover {
-      background: #eef4fb;
+      background: var(--surface-variant);
       color: var(--accent);
     }
 
@@ -517,52 +467,9 @@
     }
 
     /* ---------------- schedule options panel ---------------- */
-    .toggle-schedule-btn {
-      background: transparent;
-      color: var(--accent);
-      padding: 4px 8px;
-      font-size: .9rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .toggle-schedule-btn:hover {
-      text-decoration: underline;
-      background: #f0f4f9;
-      border-color: #d0e0f0;
-    }
-
     .schedule-options-panel {
       margin-top: 10px;
       padding: 14px;
-      border: 1px solid #ccd5e0;
-      border-radius: 6px;
-      background: #fcfdfe;
-    }
-
-    .schedule-tabs {
-      display: flex;
-      gap: 8px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-
-    .tab-btn {
-      background: #eee;
-      color: var(--fg);
-      padding: 6px 14px;
-      font-size: .85rem;
-      border-radius: 4px;
-    }
-
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
     }
 
     .datetime-rows-list {
@@ -577,7 +484,6 @@
       align-items: center;
       gap: 8px;
       padding: 6px 8px;
-      background: #fff;
       border: 1px solid var(--line);
       border-radius: 4px;
     }
@@ -628,28 +534,6 @@
       padding: 4px 10px;
       font-size: .8rem;
     }
-
-    .schedule-options-footer {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px dashed var(--line);
-    }
-
-    .feedback-msg {
-      font-size: .85rem;
-      color: #2e7d32;
-      background: #e8f5e9;
-      border: 1px solid #c8e6c9;
-      border-radius: 4px;
-      padding: 6px 12px;
-      margin-top: 8px;
-      display: none;
-    }
   </style>
 </head>
 
@@ -686,19 +570,14 @@
           <i>arrow_forward</i>
         </button>
       </nav>
+      <button class="transparent circle" data-ui="#setting-dialog">
+        <i>settings</i>
+      </button>
     </nav>
   </header>
   <main class="responsive">
     <div class="grid">
       <section id="calendar-section" class="s12">
-        <div class="toolbar">
-
-          <div class="row">
-
-
-          </div>
-          <button id="notify-btn" class="secondary">🔔 通知を有効にする</button>
-        </div>
         <div id="month-view">
           <div id="month-grid"></div>
         </div>
@@ -707,295 +586,104 @@
           <div id="timeline-hours"></div>
         </div>
       </section>
-      <main>
-
-        <h1>助じゅ～る</h1>
-        <p class="lead">日時が決まっていない予定を溜めておき、決まり次第カレンダーに配置していくためのアプリ</p>
-
-        <section>
-          <div class="toolbar">
-            <div class="row">
-              <button id="view-month">月表示</button>
-              <button id="view-timeline" class="secondary">タイムライン</button>
-            </div>
-            <div class="row">
-              <button id="nav-prev" class="secondary">◀</button>
-              <button id="nav-today" class="secondary">今日</button>
-              <button id="nav-next" class="secondary">▶</button>
-              <span id="current-label"></span>
-            </div>
-            <button id="notify-btn" class="secondary">🔔 通知を有効にする</button>
-          </div>
-        </section>
-
-        <section id="input-section">
-          <h2>予定の入力</h2>
-
-          <!-- お気に入り一覧 -->
-          <div class="favorites-section">
-            <div class="favorites-header">
-              <span class="favorites-title">⭐ よく使う予定（お気に入り）:</span>
-              <span class="muted" style="font-size: .8rem;">クリックで入力欄に反映</span>
-            </div>
-            <div id="favorites-list" class="favorites-list"></div>
-          </div>
-
-          <!-- タイトル入力＆基本ボタン -->
-          <div class="row">
-            <div class="input-history-wrapper">
-              <input id="new-title" type="text" placeholder="予定のタイトル（例: ゼミ、アルバイト、定例ミーティング）" style="width: 100%;"
-                autocomplete="off">
-              <div id="history-dropdown" class="history-dropdown" hidden></div>
-            </div>
-            <button id="add-favorite-btn" class="secondary" type="button" title="入力中の内容をお気に入りに追加">⭐ お気に入り保存</button>
-            <button id="add-event">トレイに追加</button>
-          </div>
-
-          <!-- 日時指定・繰り返し設定トグル -->
-          <div style="margin-top: 8px;">
-            <button id="toggle-schedule-btn" class="toggle-schedule-btn" type="button">
-              <span id="toggle-icon">▶</span> 日時指定・繰り返し設定（複数日時 / 毎週など）
+      <!-- 予定詳細パネル -->
+      <section id="detail-section" class="s12 m5 l4">
+        <header style="height: 24px !important">
+          <nav>
+            <button id="detail-save" class="primary circle">
+              <i>check</i>
             </button>
-          </div>
+            <button id="detail-close-btn" class="transparent circle">
+              <i>close</i>
+            </button>
+            <button id="detail-delete" class="transparent circle ">
+              <i>delete</i>
+            </button>
+          </nav>
+        </header>
+        <div class="field max">
+          <input id="detail-title" type="text" placeholder="予定のタイトル">
+        </div>
+        <div class="field label border">
+          <textarea id="detail-memo" rows="2"></textarea>
+          <label>予定のメモ</label>
+        </div>
 
-          <!-- 展開パネル -->
-          <div id="schedule-options-panel" class="schedule-options-panel" hidden>
-            <div class="schedule-tabs">
-              <button id="tab-multiple" class="tab-btn active" type="button">📅 複数日時指定</button>
-              <button id="tab-repeat" class="tab-btn" type="button">🔄 毎週繰り返し</button>
-            </div>
-
-            <!-- 複数日時指定タブ -->
-            <div id="panel-multiple">
-              <p class="muted" style="margin: 0 0 8px;">候補日や、複数の日時に同じ予定を一括配置できます。</p>
-              <div id="datetime-rows" class="datetime-rows-list"></div>
-              <button id="add-datetime-row" class="secondary small-btn" type="button" style="margin-top: 8px;">＋
-                日時を追加</button>
-            </div>
-
-            <!-- 毎週繰り返しタブ -->
-            <div id="panel-repeat" hidden>
-              <p class="muted" style="margin: 0 0 8px;">毎週決まった曜日の定期予定（授業・バイト・定例など）を一括作成します。</p>
-              <div class="row" style="margin-bottom: 8px;">
-                <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">曜日:</span>
-                <div class="weekday-selector">
-                  <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="1">月</label>
-                  <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="2">火</label>
-                  <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="3">水</label>
-                  <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="4">木</label>
-                  <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="5">金</label>
-                  <label class="weekday-pill weekend"><input type="checkbox" name="repeat-day" value="6">土</label>
-                  <label class="weekday-pill weekend"><input type="checkbox" name="repeat-day" value="0">日</label>
-                </div>
+        <!-- 日時設定エリア -->
+        <div style="margin: 8px 0;">
+          <nav>
+            <div class="row">
+              <div class="max field label border">
+                <input id="detail-date" type="date">
+                <label>日付</label>
               </div>
-              <div class="row" style="margin-bottom: 8px; align-items: center;">
-                <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">時間帯:</span>
-                <label style="font-size: .85rem; margin: 0;">開始: <select id="repeat-time"></select></label>
-                <span>〜</span>
-                <label style="font-size: .85rem; margin: 0;">終了: <select id="repeat-end-time"></select></label>
-                <label style="font-size: .85rem; margin: 0;">所要時間:
-                  <input id="repeat-duration" type="number" min="1" max="24" value="1" style="width: 4.5em;"> 時間
-                </label>
-              </div>
-              <div class="row">
-                <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">期間:</span>
-                <input id="repeat-start" type="date">
-                <span>〜</span>
-                <input id="repeat-end" type="date">
-                <button id="preset-2w" class="secondary small-btn" type="button">2週間</button>
-                <button id="preset-1m" class="secondary small-btn" type="button">1ヶ月</button>
-                <button id="preset-3m" class="secondary small-btn" type="button">3ヶ月</button>
+              <div class="max field label border">
+                <input id="detail-time" type="time" step="900">
+                <label>開始時刻</label>
               </div>
             </div>
+          </nav>
+        </div>
 
-            <!-- 共通フッター -->
-            <div class="schedule-options-footer">
-              <div class="row" style="flex:1;">
-                <input id="bulk-memo" type="text" placeholder="メモ（任意）" style="flex:1; min-width: 140px;">
-                <label style="font-size: .85rem;">ステータス:
-                  <select id="bulk-status">
-                    <option value="TENTATIVE">未確定（仮）</option>
-                    <option value="CONFIRMED">確定</option>
-                  </select>
-                </label>
-              </div>
-              <button id="bulk-add-btn" type="button">📅 カレンダーに一括追加</button>
-            </div>
-          </div>
-
-          <div id="schedule-feedback" class="feedback-msg"></div>
-
-          <p class="muted" style="margin-top: 14px; margin-bottom: 6px;">未確定トレイ（日時未定の予定）: ドラッグして下のカレンダー／タイムラインへ配置できます。
-          </p>
-          <div id="tray"></div>
-        </section>
-
-        <section>
-          <div id="month-view">
-            <div id="month-grid"></div>
-          </div>
-          <div id="timeline-view" hidden>
-            <div id="timeline-allday"></div>
-            <div id="timeline-hours"></div>
-          </div>
-        </section>
-
-        <!-- ============================================================
-       AI に任せない部分：予定の状態（未確定→確定／完了）は
-       人がこのパネルのボタンを押すまで自動では変わりません。
-       ============================================================ -->
-        <section id="detail-section" class="s12 m5 l4" hidden>
-          <header style="height: 24px !important">
-            <nav>
-              <button id="detail-close-btn" class="transparent circle absolute right">
-                <i>close</i>
+        <!-- 複数日時指定・繰り返し設定メニュー（ダイアログ起動） -->
+        <div class="field middle-align" style="margin: 12px 0;">
+          <nav>
+            <p class="large-text max">複数日時・繰り返し</p>
+            <div>
+              <button class="round border" data-ui="#bulk-schedule-dialog" type="button">
+                <i>edit_calendar</i>
+                <span>設定</span>
               </button>
-            </nav>
-          </header>
-          <div class="field max">
-            <input id="detail-title" type="text" placeholder="予定のタイトル">
-          </div>
-          <div class="field label border">
-            <textarea id="detail-memo" rows="2"></textarea>
-            <label>予定のメモ</label>
-          </div>
-          <div class="row">
-            <div class="max field label border">
-              <input id="detail-date" type="date">
-              <label>日付</label>
             </div>
-            <div class="max field label border">
-              <input id="detail-time" type="time" step="900">
-              <label>開始時刻</label>
+          </nav>
+        </div>
+
+        <!-- ステータスセレクター -->
+        <div class="field middle-align" style="margin: 12px 0;">
+          <nav>
+            <p class="large-text max">ステータス</p>
+            <div>
+              <button class="round transparent border" type="button">
+                <span class="current-status">未確定</span>
+                <i>arrow_drop_down</i>
+              </button>
+              <menu>
+                <li id="status-tentative">未確定</li>
+                <li id="status-confirmed">確定</li>
+                <li id="status-completed">完了</li>
+              </menu>
             </div>
-          </div>
-          <p class="muted">開始時刻は15分単位で設定できます。タイムライン表示では予定ブロックの下端をドラッグして所要時間を変更できます。</p>
-          <div class="field middle-align">
-            <nav>
-              <div class="max">
-                <h6>ステータス</h6>
-                <div>予定のステータスを人が決定する。</div>
-              </div>
-              <div>
-                <button class="round transparent border">
-                  <span class="current-status">未確定</span>
-                  <i>arrow_drop_down</i>
-                </button>
-                <menu>
-                  <li id="status-tentative">未確定</li>
-                  <li id="status-confirmed">確定</li>
-                  <li id="status-completed">完了</li>
-                </menu>
-              </div>
-            </nav>
-          </div>
-          <div class="row">
-            <button id="detail-save">保存</button>
-            <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
-            <button id="detail-delete" class="danger">削除</button>
-          </div>
-        </section>
-    </div>
-    <section id="detail-section" hidden>
-      <h2>予定の詳細・日時設定</h2>
-      <label>タイトル</label>
-      <input id="detail-title" type="text">
-      <label>メモ</label>
-      <textarea id="detail-memo" rows="2"></textarea>
-
-      <!-- 日時設定エリア -->
-      <label>日時設定（カレンダーへの配置）</label>
-      <div class="row" style="align-items: center;">
-        <label style="font-size: .85rem; margin: 0;">日付: <input id="detail-date" type="date"></label>
-        <label style="font-size: .85rem; margin: 0;">開始: <select id="detail-time"></select></label>
-        <span>〜</span>
-        <label style="font-size: .85rem; margin: 0;">終了: <select id="detail-end-time"></select></label>
-        <label style="font-size: .85rem; margin: 0;">所要時間:
-          <input id="detail-duration" type="number" min="1" max="24" step="1" style="width: 4.5em;"> 時間
-        </label>
-        <span id="detail-date-badge" class="muted" style="font-size: .85rem; font-weight: bold;"></span>
-      </div>
-      <p class="muted" style="font-size: .8rem; margin: 4px 0 8px;">
-        ※日付を指定して「保存」するとカレンダーに配置されます。日付を空欄にするか「日時をクリア」を押すとトレイへ戻ります。</p>
-
-      <!-- 複数日時指定・繰り返し展開トグル -->
-      <div style="margin-top: 8px;">
-        <button id="toggle-detail-schedule-btn" class="toggle-schedule-btn" type="button">
-          <span id="toggle-detail-icon">▶</span> この予定を複数日時に配置 / 毎週繰り返し展開
-        </button>
-      </div>
-
-      <!-- 展開パネル -->
-      <div id="detail-schedule-panel" class="schedule-options-panel" hidden
-        style="background: #f8fafc; border: 1px dashed var(--line); margin-top: 6px;">
-        <p class="muted" style="margin: 0 0 8px; font-size: .85rem;">この予定の内容（タイトル・メモ・所要時間）を引き継ぎ、複数日程や定期予定としてカレンダーに展開します。
-        </p>
-        <div class="schedule-tabs">
-          <button id="detail-tab-multiple" class="tab-btn active" type="button">📅 複数日時指定</button>
-          <button id="detail-tab-repeat" class="tab-btn" type="button">🔄 毎週繰り返し</button>
+          </nav>
         </div>
-
-        <!-- 複数日時指定タブ -->
-        <div id="detail-panel-multiple">
-          <p class="muted" style="margin: 0 0 8px; font-size: .8rem;">複数の候補日や、同じ予定を複数日に設定します。</p>
-          <div id="detail-datetime-rows" class="datetime-rows-list"></div>
-          <button id="detail-add-datetime-row" class="secondary small-btn" type="button" style="margin-top: 8px;">＋
-            日時を追加</button>
-        </div>
-
-        <!-- 毎週繰り返しタブ -->
-        <div id="detail-panel-repeat" hidden>
-          <p class="muted" style="margin: 0 0 8px; font-size: .8rem;">毎週決まった曜日の定期予定として一括展開します。</p>
-          <div class="row" style="margin-bottom: 8px;">
-            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">曜日:</span>
-            <div class="weekday-selector">
-              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="1">月</label>
-              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="2">火</label>
-              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="3">水</label>
-              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="4">木</label>
-              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="5">金</label>
-              <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="6">土</label>
-              <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="0">日</label>
+        <div class="field middle-align">
+          <nav>
+            <p class="large-text max">リマインダー</p>
+            <div>
+              <button class="round transparent border" type="button">
+                <span class="current-status">未設定</span>
+                <i>arrow_drop_down</i>
+              </button>
+              <menu>
+                <li>未設定</li>
+                <li>3日前</li>
+                <li>2日前</li>
+                <li>前日</li>
+                <li>当日</li>
+              </menu>
             </div>
-          </div>
-          <div class="row" style="margin-bottom: 8px; align-items: center;">
-            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">時間帯:</span>
-            <label style="font-size: .85rem; margin: 0;">開始: <select id="detail-repeat-time"></select></label>
-            <span>〜</span>
-            <label style="font-size: .85rem; margin: 0;">終了: <select id="detail-repeat-end-time"></select></label>
-          </div>
-          <div class="row">
-            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">期間:</span>
-            <input id="detail-repeat-start" type="date">
-            <span>〜</span>
-            <input id="detail-repeat-end" type="date">
-            <button id="detail-preset-2w" class="secondary small-btn" type="button">2週間</button>
-            <button id="detail-preset-1m" class="secondary small-btn" type="button">1ヶ月</button>
-            <button id="detail-preset-3m" class="secondary small-btn" type="button">3ヶ月</button>
-          </div>
+          </nav>
         </div>
 
-        <div class="row" style="margin-top: 12px; justify-content: flex-end;">
-          <button id="detail-bulk-expand-btn" type="button">📅 カレンダーに一括展開</button>
-        </div>
-      </div>
-
-      <label style="margin-top: 12px;">ステータス（人が決める）</label>
-      <div class="row">
-        <button id="status-tentative" class="secondary">未確定</button>
-        <button id="status-confirmed" class="secondary">確定</button>
-        <button id="status-completed" class="secondary">完了</button>
-      </div>
-      <div class="row" style="margin-top: 14px;">
-        <button id="detail-save">保存</button>
-        <button id="detail-load-to-input" class="secondary" type="button" title="上部の入力欄にこの予定を読み込みます">📝
-          入力欄に読み込む</button>
-        <button id="detail-favorite" class="secondary" type="button" title="この予定をお気に入りテンプレートに登録">⭐ お気に入りに追加</button>
-        <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
-        <button id="detail-delete" class="danger">削除</button>
-        <button id="detail-close" class="secondary">閉じる</button>
-      </div>
-    </section>
+        <!-- 操作ボタン群 -->
+        <nav class="wrap">
+          <button id="detail-load-to-input" class="border transparent" type="button" title="上部の入力欄にこの予定を読み込みます">📝
+            入力欄に読み込む</button>
+          <button id="detail-favorite" class="border transparent">
+            <i>favorite</i>お気に入り登録
+          </button>
+          <button id="detail-clear-date" class="border transparent">日時をクリア</button>
+        </nav>
+      </section>
 
   </main>
   <button class="l m round large add-button" data-ui="#add-event-dialog">
@@ -1012,19 +700,213 @@
         <i>close</i>
       </button>
     </nav>
-    <div class="field label border">
-      <input type="text" id="new-title">
-      <label>予定のタイトル</label>
+    <div class="field label border input-history-wrapper max suffix" style="position: relative;">
+      <input type="text" id="new-title" placeholder=" " autocomplete="off">
+      <label>予定のタイトル（例: ゼミ、アルバイト、定例ミーティング）</label>
+      <a onclick="newTitleInput.value = ''">
+        <i>close</i>
+      </a>
+      <div id="history-dropdown" class="history-dropdown"></div>
     </div>
     <div id="tray"></div>
+    <h6>よく使う予定（お気に入り）</h6>
+    <div id="favorites-list" class="favorites-list padding"></div>
+
     <nav class="right-align">
       <button id="add-event">追加</button>
     </nav>
   </dialog>
+
+  <!-- 複数日時・繰り返し一括展開ダイアログ -->
+  <dialog id="bulk-schedule-dialog" class="max">
+    <nav>
+      <h5 class="max">複数日時・繰り返し展開</h5>
+      <button class="transparent circle" data-ui="#bulk-schedule-dialog" type="button">
+        <i>close</i>
+      </button>
+    </nav>
+    <p class="muted" style="margin: 0 0 12px; font-size: .85rem;">
+      この予定の内容（タイトル・メモ・時間帯）を引き継ぎ、複数日程や定期予定としてカレンダーに展開します。
+    </p>
+
+    <div class="tabs">
+      <a class="active" data-ui="#multiple-datetime-tab">複数日時指定</a>
+      <a data-ui="#weekly-repeat-tab">繰り返し</a>
+    </div>
+
+    <!-- 複数日時指定タブ -->
+    <div class="page active" id="multiple-datetime-tab">
+      <div id="detail-datetime-rows" class="datetime-rows-list"></div>
+      <button id="detail-add-datetime-row" class="margin" type="button">
+        <i>add</i>
+        日時を追加
+      </button>
+    </div>
+
+    <!-- 毎週繰り返しタブ -->
+    <div class="page" id="weekly-repeat-tab">
+      <div class="field middle-align">
+        <nav>
+          <p class="max large-text">曜日</p>
+          <div class="weekday-selector">
+            <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="1">月</label>
+            <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="2">火</label>
+            <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="3">水</label>
+            <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="4">木</label>
+            <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="5">金</label>
+            <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="6">土</label>
+            <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="0">日</label>
+          </div>
+        </nav>
+      </div>
+      <div class="field middle-align">
+        <nav>
+          <p class="max large-text">開始時刻</p>
+          <div class="field border suffix small" style="margin: 0;">
+            <select id="detail-repeat-time"></select>
+            <i>arrow_drop_down</i>
+          </div>
+          <span>〜</span>
+          <div class="field border suffix small" style="margin: 0;">
+            <select id="detail-repeat-end-time"></select>
+            <i>arrow_drop_down</i>
+          </div>
+        </nav>
+      </div>
+      <div class="field middle-align">
+        <nav>
+          <p class="max large-text">繰り返し期間</p>
+          <div class="field border">
+            <input id="detail-repeat-start" type="date">
+          </div>
+          <span>〜</span>
+          <div class="field border">
+            <input id="detail-repeat-end" type="date">
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <nav class="right-align" style="margin-top: 16px;">
+      <button class="transparent" data-ui="#bulk-schedule-dialog" type="button">閉じる</button>
+      <button id="detail-bulk-expand-btn" type="button" data-ui="#bulk-schedule-dialog">保存</button>
+    </nav>
+  </dialog>
+
+  <dialog id="setting-dialog" class="max">
+    <nav>
+      <h5 class="max">設定</h5>
+      <button class="transparent circle" data-ui="#setting-dialog" type="button"><i>close</i></button>
+    </nav>
+    <div class="field middle-align">
+      <nav>
+        <div class="max">
+          <h6>アプリのテーマ</h6>
+          <div>ライト / ダーク / 自動</div>
+        </div>
+        <div>
+          <button class="border" type="button">
+            <span id="current-theme-label">自動</span>
+            <i>arrow_drop_down</i>
+          </button>
+          <menu>
+            <li id="theme-auto">自動</li>
+            <li id="theme-light">ライト</li>
+            <li id="theme-dark">ダーク</li>
+          </menu>
+        </div>
+      </nav>
+    </div>
+    <div class="field middle-align">
+      <nav>
+        <div class="max">
+          <h6>通知登録</h6>
+        </div>
+        <button id="notify-btn">
+          <i>notifications</i>通知を有効にする
+        </button>
+      </nav>
+    </div>
+  </dialog>
+  <div class="snackbar" id="toast"></div>
+  <div class="snackbar" id="toast-error"></div>
   <script src="js/material-dynamic-colors.min.js"></script>
   <script src="js/beer.min.js"></script>
 
   <script>
+    // ============================================================
+    // アプリのテーマ管理（ライト / ダーク / 自動）
+    // ============================================================
+    const THEME_KEY = 'taschedule_theme';
+
+    function getSavedTheme() {
+      return localStorage.getItem(THEME_KEY) || 'auto';
+    }
+
+    function applyTheme(theme) {
+      localStorage.setItem(THEME_KEY, theme);
+
+      let isDark = false;
+      if (theme === 'dark') {
+        isDark = true;
+      } else if (theme === 'light') {
+        isDark = false;
+      } else {
+        // 'auto'
+        isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      if (isDark) {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+      } else {
+        document.body.classList.remove('dark');
+        document.body.classList.add('light');
+      }
+
+      if (typeof ui === 'function') {
+        ui('theme', isDark ? 'dark' : 'light');
+      }
+
+      const labelEl = document.getElementById('current-theme-label');
+      if (labelEl) {
+        if (theme === 'auto') labelEl.textContent = '自動';
+        else if (theme === 'light') labelEl.textContent = 'ライト';
+        else if (theme === 'dark') labelEl.textContent = 'ダーク';
+      }
+
+      ['auto', 'light', 'dark'].forEach(t => {
+        const item = document.getElementById(`theme-${t}`);
+        if (item) {
+          item.className = t === theme ? 'active' : '';
+        }
+      });
+    }
+
+    // 初回即時反映
+    applyTheme(getSavedTheme());
+
+    function initTheme() {
+      ['auto', 'light', 'dark'].forEach(t => {
+        const item = document.getElementById(`theme-${t}`);
+        if (item) {
+          item.addEventListener('click', () => {
+            applyTheme(t);
+          });
+        }
+      });
+
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          if (getSavedTheme() === 'auto') {
+            applyTheme('auto');
+          }
+        });
+      }
+
+      applyTheme(getSavedTheme());
+    }
+
     // ============================================================
     // データの保存と読み込み（localStorage）
     // ============================================================
@@ -1130,75 +1012,71 @@
 
     function getTimeOptionsHtml(selectedVal = '') {
       let html = '<option value="">指定なし（終日）</option>';
-      for (let h = 0; h < 24; h++) {
-        const t = `${pad2(h)}:00`;
+      let found = false;
+      for (let totalMin = 0; totalMin < 24 * 60; totalMin += 15) {
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        const t = `${pad2(h)}:${pad2(m)}`;
         const sel = t === selectedVal ? ' selected' : '';
+        if (sel) found = true;
         html += `<option value="${t}"${sel}>${t}</option>`;
+      }
+      if (selectedVal && !found) {
+        html += `<option value="${selectedVal}" selected>${selectedVal}</option>`;
       }
       return html;
     }
 
     function getEndTimeOptionsHtml(selectedVal = '') {
       let html = '<option value="">未定（指定なし）</option>';
-      for (let h = 1; h <= 24; h++) {
-        const t = `${pad2(h)}:00`;
+      let found = false;
+      for (let totalMin = 15; totalMin <= 24 * 60; totalMin += 15) {
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        const t = `${pad2(h)}:${pad2(m)}`;
         const sel = t === selectedVal ? ' selected' : '';
+        if (sel) found = true;
         html += `<option value="${t}"${sel}>${t}</option>`;
+      }
+      if (selectedVal && !found) {
+        html += `<option value="${selectedVal}" selected>${selectedVal}</option>`;
       }
       return html;
     }
 
-    // 開始時刻・終了時刻・所要時間の双方向連動ヘルパー
-    function bindTimeAndDuration(timeEl, endTimeEl, durEl, onUpdate) {
-      if (!timeEl || !endTimeEl || !durEl) return;
+    // 開始時刻・終了時刻の双方向連動ヘルパー
+    function bindTimeAndDuration(timeEl, endTimeEl, onUpdate) {
+      if (!timeEl || !endTimeEl) return;
 
       timeEl.addEventListener('change', () => {
         const startVal = timeEl.value;
         if (!startVal) {
           endTimeEl.value = '';
         } else if (endTimeEl.value) {
-          const startH = parseInt(startVal, 10);
-          let endH = parseInt(endTimeEl.value, 10);
-          if (endH <= startH) {
-            endH = Math.min(24, startH + (parseInt(durEl.value, 10) || 1));
-            endTimeEl.value = `${pad2(endH)}:00`;
+          const startHours = timeToHours(startVal);
+          const endHours = timeToHours(endTimeEl.value);
+          if (endHours <= startHours) {
+            endTimeEl.value = calcEndTime(startVal, 1);
           }
-          durEl.value = Math.max(1, endH - startH);
         }
-        if (onUpdate) onUpdate();
+        if (typeof onUpdate === 'function') onUpdate();
       });
 
       endTimeEl.addEventListener('change', () => {
         const endVal = endTimeEl.value;
         if (endVal) {
-          const endH = parseInt(endVal, 10);
+          const endHours = timeToHours(endVal);
           if (!timeEl.value) {
-            const startH = Math.max(0, endH - (parseInt(durEl.value, 10) || 1));
-            timeEl.value = `${pad2(startH)}:00`;
-            durEl.value = Math.max(1, endH - startH);
+            const startHours = Math.max(0, endHours - 1);
+            timeEl.value = hoursToTime(startHours);
           } else {
-            const startH = parseInt(timeEl.value, 10);
-            if (endH <= startH) {
-              const adjustedEnd = Math.min(24, startH + 1);
-              endTimeEl.value = `${pad2(adjustedEnd)}:00`;
-              durEl.value = 1;
-            } else {
-              durEl.value = Math.max(1, endH - startH);
+            const startHours = timeToHours(timeEl.value);
+            if (endHours <= startHours) {
+              endTimeEl.value = calcEndTime(timeEl.value, 1);
             }
           }
         }
-        if (onUpdate) onUpdate();
-      });
-
-      durEl.addEventListener('input', () => {
-        const startVal = timeEl.value;
-        const dur = Math.min(24, Math.max(1, parseInt(durEl.value, 10) || 1));
-        if (startVal && endTimeEl.value) {
-          const startH = parseInt(startVal, 10);
-          const endH = Math.min(24, startH + dur);
-          endTimeEl.value = `${pad2(endH)}:00`;
-        }
-        if (onUpdate) onUpdate();
+        if (typeof onUpdate === 'function') onUpdate();
       });
     }
 
@@ -1507,19 +1385,6 @@
         <span class="event-time-badge">${ev.time} - ${endTime}</span>
         <span class="event-title-text">${escapeHtml(ev.title || '(無題)')}</span>
       `;
-
-      const isUnset = ev.isEndTimeUnset || !ev.endTime;
-      if (isUnset) {
-        chip.classList.add('endtime-unset');
-        const hint = document.createElement('span');
-        hint.className = 'endtime-hint';
-        hint.textContent = '〜未定';
-        chip.appendChild(hint);
-        chip.title = `${ev.title}\n開始: ${ev.time} / 終了: 未定（下端ドラッグで確定可能）${ev.memo ? '\n' + ev.memo : ''}`;
-      } else {
-        chip.title = `${ev.title}\n時間: ${ev.time}〜${ev.endTime} (${ev.duration || 1}時間)${ev.memo ? '\n' + ev.memo : ''}`;
-      }
-
       Object.assign(chip.style, style);
 
       const topHandle = document.createElement('div');
@@ -1629,12 +1494,9 @@
       function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
-        if (finalDuration !== startDuration || ev.isEndTimeUnset) {
+        if (finalDuration !== startDuration) {
           ev.duration = finalDuration;
-          ev.endTime = `${pad2(startHour + finalDuration)}:00`;
-          ev.isEndTimeUnset = false;
           saveEvents(events);
-          showFeedback(`「${ev.title}」の終了時刻を ${ev.endTime} に確定しました 🕒`);
         }
         renderAll();
       }
@@ -1676,15 +1538,10 @@
     // ============================================================
     // フィードバックメッセージ表示
     // ============================================================
-    function showFeedback(msg) {
-      const el = document.getElementById('schedule-feedback');
-      if (!el) return;
-      el.textContent = msg;
-      el.style.display = 'block';
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => {
-        el.style.display = 'none';
-      }, 4000);
+    function showFeedback(msg, err = false) {
+      const id = err ? "toast-error" : "toast";
+      document.getElementById(id).textContent = msg;
+      ui(`#${id}`)
     }
 
     // ============================================================
@@ -1699,28 +1556,31 @@
         const empty = document.createElement('span');
         empty.className = 'muted';
         empty.style.fontSize = '.8rem';
-        empty.textContent = 'お気に入りはまだありません（タイトル入力後に「⭐ お気に入り保存」で追加）';
+        empty.textContent = 'お気に入りはまだありません（予定詳細の「お気に入り保存」で追加できます）';
         favoritesListEl.appendChild(empty);
         return;
       }
 
       favs.forEach(fav => {
-        const chip = document.createElement('span');
-        chip.className = 'fav-chip';
+        const chip = document.createElement('button');
+        chip.className = 'chip';
         const info = [];
         if (fav.time) info.push(fav.time);
         if (fav.duration) info.push(`${fav.duration}時間`);
         const infoText = info.length > 0 ? ` [${info.join(', ')}]` : '';
-        chip.title = `${fav.title}${infoText}${fav.memo ? '\n' + fav.memo : ''}\nクリックで入力欄に反映`;
+        const tooltip = document.createElement("span");
+        tooltip.className = 'tooltip bottom';
+        tooltip.innerHTML = `${fav.title}${infoText}${fav.memo ? '<br>' + fav.memo : ''}<br>クリックで入力欄に反映`;
+        chip.appendChild(tooltip);
 
         const titleSpan = document.createElement('span');
         titleSpan.textContent = fav.title;
         chip.appendChild(titleSpan);
 
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'remove-fav';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.title = 'お気に入りから削除';
+        const removeBtn = document.createElement('a');
+        removeBtn.className = 'link';
+        removeBtn.style.fontSize = '20px';
+        removeBtn.innerHTML = '<i>close</i>';
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           if (!confirm(`「${fav.title}」をお気に入りから削除してもよろしいですか？`)) {
@@ -1746,331 +1606,13 @@
       input.value = fav.title;
       input.focus();
 
-      const memoInput = document.getElementById('bulk-memo');
-      if (memoInput && fav.memo !== undefined) {
-        memoInput.value = fav.memo;
-      }
-
-      if (fav.duration) {
-        const repeatDuration = document.getElementById('repeat-duration');
-        if (repeatDuration) repeatDuration.value = fav.duration;
-        document.querySelectorAll('.row-duration').forEach(el => {
-          el.value = fav.duration;
-        });
-      }
-
-      if (fav.time !== undefined) {
-        const repeatTime = document.getElementById('repeat-time');
-        if (repeatTime) repeatTime.value = fav.time;
-        document.querySelectorAll('.row-time').forEach(el => {
-          el.value = fav.time;
-        });
-      }
-
       if (chipEl) {
         chipEl.classList.remove('applied');
         void chipEl.offsetWidth;
         chipEl.classList.add('applied');
       }
 
-      showFeedback(`「${fav.title}」を入力欄に反映しました ✨`);
-    }
-
-    function addFavoriteFromInput() {
-      const input = document.getElementById('new-title');
-      const title = input.value.trim();
-      if (!title) {
-        alert('お気に入りに保存する予定のタイトルを入力してください。');
-        input.focus();
-        return;
-      }
-
-      const memo = document.getElementById('bulk-memo')?.value || '';
-      const duration = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
-      const time = document.getElementById('repeat-time')?.value || '';
-
-      const favs = loadFavorites();
-      const existing = favs.find(f => f.title === title);
-      if (existing) {
-        existing.memo = memo;
-        existing.duration = duration;
-        existing.time = time;
-      } else {
-        favs.push({
-          id: 'fav_' + Date.now().toString(36),
-          title,
-          duration,
-          memo,
-          time
-        });
-      }
-      saveFavorites(favs);
-      renderFavorites();
-      showFeedback(`「${title}」をお気に入りに保存しました ⭐`);
-    }
-
-    document.getElementById('add-favorite-btn').addEventListener('click', addFavoriteFromInput);
-
-    // ============================================================
-    // 日時指定・繰り返し設定（複数日時 / 毎週など）
-    // ============================================================
-    const toggleScheduleBtn = document.getElementById('toggle-schedule-btn');
-    const scheduleOptionsPanel = document.getElementById('schedule-options-panel');
-    const toggleIcon = document.getElementById('toggle-icon');
-
-    toggleScheduleBtn.addEventListener('click', () => {
-      const isHidden = scheduleOptionsPanel.hidden;
-      scheduleOptionsPanel.hidden = !isHidden;
-      toggleIcon.textContent = isHidden ? '▼' : '▶';
-    });
-
-    let activeScheduleTab = 'multiple'; // 'multiple' | 'repeat'
-    const tabMultipleBtn = document.getElementById('tab-multiple');
-    const tabRepeatBtn = document.getElementById('tab-repeat');
-    const panelMultiple = document.getElementById('panel-multiple');
-    const panelRepeat = document.getElementById('panel-repeat');
-
-    tabMultipleBtn.addEventListener('click', () => {
-      activeScheduleTab = 'multiple';
-      tabMultipleBtn.className = 'tab-btn active';
-      tabRepeatBtn.className = 'tab-btn';
-      panelMultiple.hidden = false;
-      panelRepeat.hidden = true;
-    });
-
-    tabRepeatBtn.addEventListener('click', () => {
-      activeScheduleTab = 'repeat';
-      tabRepeatBtn.className = 'tab-btn active';
-      tabMultipleBtn.className = 'tab-btn';
-      panelMultiple.hidden = true;
-      panelRepeat.hidden = false;
-    });
-
-    // 曜日選択のクリック連動
-    document.querySelectorAll('.weekday-pill').forEach(pill => {
-      const checkbox = pill.querySelector('input[type="checkbox"]');
-      if (!checkbox) return;
-      pill.addEventListener('click', () => {
-        setTimeout(() => {
-          pill.classList.toggle('checked', checkbox.checked);
-        }, 0);
-      });
-    });
-
-    // 期間プリセットボタン
-    const repeatStartInput = document.getElementById('repeat-start');
-    const repeatEndInput = document.getElementById('repeat-end');
-
-    function setRepeatPeriodPreset(days) {
-      const start = repeatStartInput.value ? new Date(repeatStartInput.value + 'T00:00:00') : new Date();
-      repeatStartInput.value = dateStr(start);
-      const end = new Date(start);
-      end.setDate(end.getDate() + days);
-      repeatEndInput.value = dateStr(end);
-    }
-
-    document.getElementById('preset-2w').addEventListener('click', () => setRepeatPeriodPreset(14));
-    document.getElementById('preset-1m').addEventListener('click', () => setRepeatPeriodPreset(30));
-    document.getElementById('preset-3m').addEventListener('click', () => setRepeatPeriodPreset(90));
-
-    // 複数日時の行管理
-    const datetimeRowsEl = document.getElementById('datetime-rows');
-
-    function createDatetimeRow(initialDate = '', initialTime = '', initialDuration = 1, initialEndTime = '') {
-      const row = document.createElement('div');
-      row.className = 'datetime-row';
-
-      const dateInput = document.createElement('input');
-      dateInput.type = 'date';
-      dateInput.className = 'row-date';
-      dateInput.value = initialDate || todayStr();
-
-      const timeSelect = document.createElement('select');
-      timeSelect.className = 'row-time';
-      timeSelect.innerHTML = getTimeOptionsHtml(initialTime);
-
-      const toSpan = document.createElement('span');
-      toSpan.textContent = '〜';
-
-      const endTimeSelect = document.createElement('select');
-      endTimeSelect.className = 'row-end-time';
-      endTimeSelect.innerHTML = getEndTimeOptionsHtml(initialEndTime);
-
-      const durLabel = document.createElement('label');
-      durLabel.style.fontSize = '.85rem';
-      durLabel.textContent = '所要時間: ';
-      const durInput = document.createElement('input');
-      durInput.type = 'number';
-      durInput.className = 'row-duration';
-      durInput.min = '1';
-      durInput.max = '24';
-      durInput.value = initialDuration || 1;
-      durInput.style.width = '4.5em';
-      durLabel.appendChild(durInput);
-      durLabel.appendChild(document.createTextNode(' 時間'));
-
-      bindTimeAndDuration(timeSelect, endTimeSelect, durInput);
-
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'secondary small-btn';
-      removeBtn.textContent = '✕ 削除';
-      removeBtn.addEventListener('click', () => {
-        if (datetimeRowsEl.children.length <= 1) {
-          dateInput.value = todayStr();
-          timeSelect.value = '';
-          endTimeSelect.value = '';
-          durInput.value = '1';
-          return;
-        }
-        row.remove();
-      });
-
-      row.appendChild(dateInput);
-      row.appendChild(timeSelect);
-      row.appendChild(toSpan);
-      row.appendChild(endTimeSelect);
-      row.appendChild(durLabel);
-      row.appendChild(removeBtn);
-
-      return row;
-    }
-
-    function addDatetimeRow(initialDate = '') {
-      let nextDate = initialDate;
-      if (!nextDate) {
-        const lastRow = datetimeRowsEl.lastElementChild;
-        if (lastRow) {
-          const lastDateVal = lastRow.querySelector('.row-date')?.value;
-          if (lastDateVal) {
-            const d = new Date(lastDateVal + 'T00:00:00');
-            d.setDate(d.getDate() + 1);
-            nextDate = dateStr(d);
-          }
-        }
-      }
-      const defaultDuration = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
-      const defaultTime = document.getElementById('repeat-time')?.value || '';
-      const defaultEndTime = document.getElementById('repeat-end-time')?.value || '';
-      const row = createDatetimeRow(nextDate, defaultTime, defaultDuration, defaultEndTime);
-      datetimeRowsEl.appendChild(row);
-    }
-
-    document.getElementById('add-datetime-row').addEventListener('click', () => addDatetimeRow());
-
-    // 一括追加処理
-    document.getElementById('bulk-add-btn').addEventListener('click', bulkAddEvents);
-
-    function bulkAddEvents() {
-      const titleInput = document.getElementById('new-title');
-      const title = titleInput.value.trim();
-      if (!title) {
-        alert('予定のタイトルを入力してください。');
-        titleInput.focus();
-        return;
-      }
-
-      const memo = document.getElementById('bulk-memo').value;
-      const status = document.getElementById('bulk-status').value;
-      const eventsToAdd = [];
-
-      if (activeScheduleTab === 'multiple') {
-        const rows = datetimeRowsEl.querySelectorAll('.datetime-row');
-        rows.forEach(row => {
-          const d = row.querySelector('.row-date')?.value;
-          if (!d) return;
-          const t = row.querySelector('.row-time')?.value || null;
-          const et = row.querySelector('.row-end-time')?.value || null;
-          const dur = parseInt(row.querySelector('.row-duration')?.value, 10) || 1;
-          eventsToAdd.push({
-            id: uid(),
-            title,
-            memo,
-            status,
-            date: d,
-            time: t,
-            endTime: (t && et) ? et : null,
-            isEndTimeUnset: !!(t && !et),
-            duration: dur,
-            createdAt: Date.now(),
-            remindedOn: null,
-          });
-        });
-
-        if (eventsToAdd.length === 0) {
-          alert('日時を少なくとも1つ指定してください。');
-          return;
-        }
-      } else {
-        const checkedDays = Array.from(document.querySelectorAll('input[name="repeat-day"]:checked'))
-          .map(cb => parseInt(cb.value, 10));
-        if (checkedDays.length === 0) {
-          alert('繰り返し対象の曜日を1つ以上選択してください。');
-          return;
-        }
-
-        const startStr = repeatStartInput.value;
-        const endStr = repeatEndInput.value;
-        if (!startStr || !endStr) {
-          alert('開始日と終了日を指定してください。');
-          return;
-        }
-
-        const startDate = new Date(startStr + 'T00:00:00');
-        const endDate = new Date(endStr + 'T00:00:00');
-        if (startDate > endDate) {
-          alert('開始日は終了日以前の日付を指定してください。');
-          return;
-        }
-
-        const t = document.getElementById('repeat-time')?.value || null;
-        const et = document.getElementById('repeat-end-time')?.value || null;
-        const dur = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
-
-        const cur = new Date(startDate);
-        let count = 0;
-        const maxLimit = 150;
-        while (cur <= endDate && count < maxLimit) {
-          if (checkedDays.includes(cur.getDay())) {
-            eventsToAdd.push({
-              id: uid(),
-              title,
-              memo,
-              status,
-              date: dateStr(cur),
-              time: t,
-              endTime: (t && et) ? et : null,
-              isEndTimeUnset: !!(t && !et),
-              duration: dur,
-              createdAt: Date.now(),
-              remindedOn: null,
-            });
-            count++;
-          }
-          cur.setDate(cur.getDate() + 1);
-        }
-
-        if (eventsToAdd.length === 0) {
-          alert('指定した期間内に該当する曜日の日付がありませんでした。');
-          return;
-        }
-      }
-
-      const allEvents = loadEvents();
-      eventsToAdd.forEach(ev => allEvents.push(ev));
-      saveEvents(allEvents);
-
-      if (eventsToAdd[0]?.date) {
-        const firstDate = new Date(eventsToAdd[0].date + 'T00:00:00');
-        viewDate = firstDate;
-      }
-
-      recordHistory(title, memo, eventsToAdd[0]?.duration || 1, eventsToAdd[0]?.time || '');
-      titleInput.value = '';
-      document.getElementById('bulk-memo').value = '';
-      if (historyDropdown) historyDropdown.hidden = true;
-      renderAll();
-      showFeedback(`${eventsToAdd.length}件の予定をカレンダーに追加しました 📅`);
+      showFeedback(`「${fav.title}」を入力欄に反映しました`);
     }
 
     // ============================================================
@@ -2133,26 +1675,22 @@
 
       historyDropdown.innerHTML = '';
       if (filtered.length === 0) {
-        historyDropdown.hidden = true;
+        historyDropdown.style.display = 'none';
         return;
       }
 
-      const header = document.createElement('div');
-      header.className = 'history-header';
-      header.innerHTML = '<span>🕒 直近の登録履歴</span><span style="cursor:pointer; font-weight:normal;" title="履歴を閉じる">✕</span>';
-      header.querySelector('span:last-child').addEventListener('click', (e) => {
-        e.stopPropagation();
-        historyDropdown.hidden = true;
-      });
-      historyDropdown.appendChild(header);
-
       filtered.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'history-item';
+        const row = document.createElement('nav');
+        row.classList.add("history-item", "no-margin")
 
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = item.title;
-        row.appendChild(titleSpan);
+        const historyIcon = document.createElement('i');
+        historyIcon.textContent = 'history';
+        row.appendChild(historyIcon);
+
+        const titleDiv = document.createElement('p');
+        titleDiv.classList.add("max", "large-text");
+        titleDiv.textContent = item.title;
+        row.appendChild(titleDiv);
 
         const metaSpan = document.createElement('span');
         metaSpan.className = 'history-meta';
@@ -2165,43 +1703,27 @@
         row.addEventListener('click', (e) => {
           e.stopPropagation();
           applyHistoryItem(item);
-          historyDropdown.hidden = true;
+          historyDropdown.style.display = 'none';
         });
 
         historyDropdown.appendChild(row);
       });
 
-      historyDropdown.hidden = false;
+      historyDropdown.style.display = 'block';
     }
 
     function applyHistoryItem(item) {
       newTitleInput.value = item.title;
       newTitleInput.focus();
-
-      const memoInput = document.getElementById('bulk-memo');
-      if (memoInput && item.memo) {
-        memoInput.value = item.memo;
-      }
-      if (item.duration) {
-        const repeatDuration = document.getElementById('repeat-duration');
-        if (repeatDuration) repeatDuration.value = item.duration;
-        document.querySelectorAll('.row-duration').forEach(el => {
-          el.value = item.duration;
-        });
-      }
-      if (item.time) {
-        const repeatTime = document.getElementById('repeat-time');
-        if (repeatTime) repeatTime.value = item.time;
-        document.querySelectorAll('.row-time').forEach(el => {
-          el.value = item.time;
-        });
-      }
-      showFeedback(`履歴から「${item.title}」を反映しました ✨`);
     }
 
     newTitleInput.addEventListener('focus', () => {
       renderHistoryDropdown(newTitleInput.value);
     });
+
+    newTitleInput.addEventListener("focusout", () => {
+      historyDropdown.style.display = "none";
+    })
 
     newTitleInput.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2261,69 +1783,16 @@
     // 予定の詳細パネル（日時設定・ステータス確定・展開）
     // ============================================================
     const detailDateInput = document.getElementById('detail-date');
-    const detailTimeSelect = document.getElementById('detail-time');
-    const detailEndTimeSelect = document.getElementById('detail-end-time');
-    const detailDurationInput = document.getElementById('detail-duration');
-    const detailDateBadge = document.getElementById('detail-date-badge');
 
     const detailRepeatTimeSelect = document.getElementById('detail-repeat-time');
     const detailRepeatEndTimeSelect = document.getElementById('detail-repeat-end-time');
+    bindTimeAndDuration(detailRepeatTimeSelect, detailRepeatEndTimeSelect);
 
-    function updateDetailDateBadge() {
-      const d = detailDateInput.value;
-      const t = detailTimeSelect.value;
-      const et = detailEndTimeSelect.value;
-      if (d) {
-        if (t) {
-          detailDateBadge.textContent = et ? `【配置中：${d} ${t}〜${et}】` : `【配置中：${d} ${t}〜未定】`;
-        } else {
-          detailDateBadge.textContent = `【配置中：${d} 終日】`;
-        }
-        detailDateBadge.style.color = 'var(--accent)';
-      } else {
-        detailDateBadge.textContent = '【配置中：未確定トレイ内（日時未定）】';
-        detailDateBadge.style.color = '#c0392b';
-      }
-    }
+    const bulkScheduleDialog = document.getElementById('bulk-schedule-dialog');
 
-    bindTimeAndDuration(detailTimeSelect, detailEndTimeSelect, detailDurationInput, updateDetailDateBadge);
-    bindTimeAndDuration(detailRepeatTimeSelect, detailRepeatEndTimeSelect, detailDurationInput);
-    detailDateInput.addEventListener('input', updateDetailDateBadge);
 
-    const toggleDetailScheduleBtn = document.getElementById('toggle-detail-schedule-btn');
-    const detailSchedulePanel = document.getElementById('detail-schedule-panel');
-    const toggleDetailIcon = document.getElementById('toggle-detail-icon');
-
-    toggleDetailScheduleBtn.addEventListener('click', () => {
-      const isHidden = detailSchedulePanel.hidden;
-      detailSchedulePanel.hidden = !isHidden;
-      toggleDetailIcon.textContent = isHidden ? '▼' : '▶';
-    });
-
-    let detailActiveScheduleTab = 'multiple';
-    const detailTabMultipleBtn = document.getElementById('detail-tab-multiple');
-    const detailTabRepeatBtn = document.getElementById('detail-tab-repeat');
-    const detailPanelMultiple = document.getElementById('detail-panel-multiple');
-    const detailPanelRepeat = document.getElementById('detail-panel-repeat');
-
-    detailTabMultipleBtn.addEventListener('click', () => {
-      detailActiveScheduleTab = 'multiple';
-      detailTabMultipleBtn.className = 'tab-btn active';
-      detailTabRepeatBtn.className = 'tab-btn';
-      detailPanelMultiple.hidden = false;
-      detailPanelRepeat.hidden = true;
-    });
-
-    detailTabRepeatBtn.addEventListener('click', () => {
-      detailActiveScheduleTab = 'repeat';
-      detailTabRepeatBtn.className = 'tab-btn active';
-      detailTabMultipleBtn.className = 'tab-btn';
-      detailPanelMultiple.hidden = true;
-      detailPanelRepeat.hidden = false;
-    });
-
-    // 詳細パネル用曜日ピルのクリック連動
-    document.querySelectorAll('#detail-schedule-panel .weekday-pill').forEach(pill => {
+    // ダイアログ用曜日ピルのクリック連動
+    document.querySelectorAll('#bulk-schedule-dialog .weekday-pill').forEach(pill => {
       const checkbox = pill.querySelector('input[type="checkbox"]');
       if (!checkbox) return;
       pill.addEventListener('click', () => {
@@ -2333,59 +1802,54 @@
       });
     });
 
-    // 詳細パネル用期間プリセット
+    // 繰り返し期間入力
     const detailRepeatStartInput = document.getElementById('detail-repeat-start');
     const detailRepeatEndInput = document.getElementById('detail-repeat-end');
-
-    function setDetailRepeatPreset(days) {
-      const start = detailRepeatStartInput.value ? new Date(detailRepeatStartInput.value + 'T00:00:00') : new Date();
-      detailRepeatStartInput.value = dateStr(start);
-      const end = new Date(start);
-      end.setDate(end.getDate() + days);
-      detailRepeatEndInput.value = dateStr(end);
-    }
-
-    document.getElementById('detail-preset-2w').addEventListener('click', () => setDetailRepeatPreset(14));
-    document.getElementById('detail-preset-1m').addEventListener('click', () => setDetailRepeatPreset(30));
-    document.getElementById('detail-preset-3m').addEventListener('click', () => setDetailRepeatPreset(90));
 
     // 詳細パネル用複数日時行管理
     const detailDatetimeRowsEl = document.getElementById('detail-datetime-rows');
 
-    function createDetailDatetimeRow(initialDate = '', initialTime = '', initialDuration = 1, initialEndTime = '') {
-      const row = document.createElement('div');
+    function createDetailDatetimeRow(initialDate = '', initialTime = '', initialEndTime = '') {
+      const row = document.createElement('nav');
       row.className = 'datetime-row';
 
+      const dateInputWrapper = document.createElement("div");
+      dateInputWrapper.classList.add("field", "border", "small");
+      dateInputWrapper.style.margin = '0';
       const dateInput = document.createElement('input');
       dateInput.type = 'date';
       dateInput.className = 'row-date';
       dateInput.value = initialDate || todayStr();
+      dateInputWrapper.appendChild(dateInput);
+
+      function createDownIcon() {
+        const icon = document.createElement('i');
+        icon.textContent = 'arrow_drop_down';
+        return icon;
+      }
+
+      const timeSelectWrapper = document.createElement("div");
+      timeSelectWrapper.classList.add("field", "border", "suffix");
+      timeSelectWrapper.style.margin = '0';
 
       const timeSelect = document.createElement('select');
       timeSelect.className = 'row-time';
       timeSelect.innerHTML = getTimeOptionsHtml(initialTime);
+      timeSelectWrapper.append(timeSelect, createDownIcon());
 
       const toSpan = document.createElement('span');
       toSpan.textContent = '〜';
 
+      const endTimeSelectWrapper = document.createElement("div");
+      endTimeSelectWrapper.classList.add("field", "border", "suffix");
+      endTimeSelectWrapper.style.margin = '0';
+
       const endTimeSelect = document.createElement('select');
       endTimeSelect.className = 'row-end-time';
       endTimeSelect.innerHTML = getEndTimeOptionsHtml(initialEndTime);
+      endTimeSelectWrapper.append(endTimeSelect, createDownIcon());
 
-      const durLabel = document.createElement('label');
-      durLabel.style.fontSize = '.85rem';
-      durLabel.textContent = '所要時間: ';
-      const durInput = document.createElement('input');
-      durInput.type = 'number';
-      durInput.className = 'row-duration';
-      durInput.min = '1';
-      durInput.max = '24';
-      durInput.value = initialDuration || 1;
-      durInput.style.width = '4.5em';
-      durLabel.appendChild(durInput);
-      durLabel.appendChild(document.createTextNode(' 時間'));
-
-      bindTimeAndDuration(timeSelect, endTimeSelect, durInput);
+      bindTimeAndDuration(timeSelect, endTimeSelect);
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
@@ -2396,17 +1860,15 @@
           dateInput.value = todayStr();
           timeSelect.value = '';
           endTimeSelect.value = '';
-          durInput.value = '1';
           return;
         }
         row.remove();
       });
 
-      row.appendChild(dateInput);
-      row.appendChild(timeSelect);
+      row.appendChild(dateInputWrapper);
+      row.appendChild(timeSelectWrapper);
       row.appendChild(toSpan);
-      row.appendChild(endTimeSelect);
-      row.appendChild(durLabel);
+      row.appendChild(endTimeSelectWrapper);
       row.appendChild(removeBtn);
 
       return row;
@@ -2425,10 +1887,11 @@
           }
         }
       }
-      const curDur = parseInt(detailDurationInput.value, 10) || 1;
-      const curTime = detailTimeSelect.value || '';
-      const curEndTime = detailEndTimeSelect.value || '';
-      const row = createDetailDatetimeRow(nextDate, curTime, curDur, curEndTime);
+      const ev = selectedEventId ? loadEvents().find(e => e.id === selectedEventId) : null;
+      const curDur = ev?.duration || 1;
+      const curTime = detailTimeSelect ? detailTimeSelect.value || '' : '';
+      const curEndTime = curTime && curDur ? calcEndTime(curTime, curDur) : '';
+      const row = createDetailDatetimeRow(nextDate, curTime, curEndTime);
       detailDatetimeRowsEl.appendChild(row);
     }
 
@@ -2443,19 +1906,21 @@
 
       const title = document.getElementById('detail-title').value.trim() || ev.title;
       const memo = document.getElementById('detail-memo').value;
-      const baseDuration = parseInt(detailDurationInput.value, 10) || ev.duration || 1;
+      const baseDuration = ev.duration || 1;
       const status = pendingStatus || ev.status || 'TENTATIVE';
 
       const scheduleItems = [];
 
-      if (detailActiveScheduleTab === 'multiple') {
+      const repeatTabLink = document.querySelector('#bulk-schedule-dialog .tabs a[data-ui="#weekly-repeat-tab"]');
+      const isRepeatTab = (repeatTabLink && repeatTabLink.classList.contains('active')) || document.getElementById('weekly-repeat-tab')?.classList.contains('active');
+      if (!isRepeatTab) {
         const rows = detailDatetimeRowsEl.querySelectorAll('.datetime-row');
         rows.forEach(row => {
           const d = row.querySelector('.row-date')?.value;
           if (!d) return;
           const t = row.querySelector('.row-time')?.value || null;
           const et = row.querySelector('.row-end-time')?.value || null;
-          const dur = parseInt(row.querySelector('.row-duration')?.value, 10) || baseDuration;
+          const dur = (t && et) ? Math.max(0.25, timeToHours(et) - timeToHours(t)) : baseDuration;
           scheduleItems.push({
             date: d,
             time: t,
@@ -2469,7 +1934,7 @@
           return;
         }
       } else {
-        const checkedDays = Array.from(document.querySelectorAll('#detail-schedule-panel input[name="detail-repeat-day"]:checked'))
+        const checkedDays = Array.from(document.querySelectorAll('#bulk-schedule-dialog input[name="detail-repeat-day"]:checked'))
           .map(cb => parseInt(cb.value, 10));
         if (checkedDays.length === 0) {
           alert('繰り返し対象の曜日を1つ以上選択してください。');
@@ -2489,6 +1954,7 @@
         }
         const t = detailRepeatTimeSelect.value || null;
         const et = detailRepeatEndTimeSelect.value || null;
+        const dur = (t && et) ? Math.max(0.25, timeToHours(et) - timeToHours(t)) : baseDuration;
         const cur = new Date(startDate);
         let count = 0;
         const maxLimit = 150;
@@ -2499,7 +1965,7 @@
               time: t,
               endTime: (t && et) ? et : null,
               isEndTimeUnset: !!(t && !et),
-              duration: baseDuration
+              duration: dur
             });
             count++;
           }
@@ -2543,6 +2009,8 @@
       saveEvents(events);
       recordHistory(title, memo, baseDuration, first.time || '');
       viewDate = new Date(first.date + 'T00:00:00');
+      const dlg = document.getElementById('bulk-schedule-dialog');
+      if (dlg && dlg.open) dlg.close();
       closeDetail();
       renderAll();
       showFeedback(`「${title}」を${scheduleItems.length}件の日程に一括展開しました 📅`);
@@ -2556,39 +2024,13 @@
       if (!ev) return;
 
       const title = document.getElementById('detail-title').value.trim() || ev.title;
-      const memo = document.getElementById('detail-memo').value;
-      const duration = parseInt(detailDurationInput.value, 10) || ev.duration || 1;
-      const time = detailTimeSelect.value || ev.time || '';
-      const endTime = detailEndTimeSelect.value || ev.endTime || '';
-
       const titleInput = document.getElementById('new-title');
       titleInput.value = title;
-      const bulkMemo = document.getElementById('bulk-memo');
-      if (bulkMemo) bulkMemo.value = memo;
-
-      const repeatDuration = document.getElementById('repeat-duration');
-      if (repeatDuration) repeatDuration.value = duration;
-      document.querySelectorAll('#datetime-rows .row-duration').forEach(el => el.value = duration);
-
-      const repeatTime = document.getElementById('repeat-time');
-      if (repeatTime) repeatTime.value = time;
-      document.querySelectorAll('#datetime-rows .row-time').forEach(el => el.value = time);
-
-      const repeatEndTime = document.getElementById('repeat-end-time');
-      if (repeatEndTime) repeatEndTime.value = endTime;
-      document.querySelectorAll('#datetime-rows .row-end-time').forEach(el => el.value = endTime);
-
-      // 上部の日時設定パネルを展開
-      const scheduleOptionsPanel = document.getElementById('schedule-options-panel');
-      if (scheduleOptionsPanel) {
-        scheduleOptionsPanel.hidden = false;
-        const toggleIcon = document.getElementById('toggle-icon');
-        if (toggleIcon) toggleIcon.textContent = '▼';
-      }
 
       closeDetail();
-      const inputSection = document.getElementById('input-section');
-      if (inputSection) inputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (typeof ui === 'function') {
+        ui('#add-event-dialog');
+      }
       titleInput.focus();
       showFeedback(`「${title}」を入力欄に読み込みました 📝`);
     });
@@ -2608,29 +2050,26 @@
       document.getElementById('detail-memo').value = ev.memo || '';
       document.getElementById('detail-date').value = ev.date || '';
       document.getElementById('detail-time').value = ev.time || '';
-      detailDurationInput.value = ev.duration || 1;
 
-      // 日時設定の反映
+      // 展開用設定の反映
       detailDateInput.value = ev.date || '';
-      detailTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
-      detailEndTimeSelect.innerHTML = getEndTimeOptionsHtml(ev.endTime || '');
       detailRepeatTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
       detailRepeatEndTimeSelect.innerHTML = getEndTimeOptionsHtml(ev.endTime || '');
-
-      // バッジ表示
-      updateDetailDateBadge();
 
       // 展開用複数日時行の初期化
       detailDatetimeRowsEl.innerHTML = '';
       const initialDate = ev.date || todayStr();
-      detailDatetimeRowsEl.appendChild(createDetailDatetimeRow(initialDate, ev.time || '', ev.duration || 1, ev.endTime || ''));
+      const initialEndTime = ev.endTime || (ev.time && ev.duration ? calcEndTime(ev.time, ev.duration) : '');
+      detailDatetimeRowsEl.appendChild(createDetailDatetimeRow(initialDate, ev.time || '', initialEndTime));
 
-      // 展開用毎週繰り返しの初期化
+      // 展開用繰り返しの初期化
       detailRepeatStartInput.value = initialDate;
-      setDetailRepeatPreset(30);
+      const defaultEndDate = new Date(initialDate + 'T00:00:00');
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30);
+      detailRepeatEndInput.value = dateStr(defaultEndDate);
       const evDateObj = new Date(initialDate + 'T00:00:00');
       const dayOfWeek = evDateObj.getDay();
-      document.querySelectorAll('#detail-schedule-panel .weekday-pill').forEach(pill => {
+      document.querySelectorAll('#bulk-schedule-dialog .weekday-pill').forEach(pill => {
         const cb = pill.querySelector('input[type="checkbox"]');
         if (!cb) return;
         const shouldCheck = parseInt(cb.value, 10) === dayOfWeek;
@@ -2638,14 +2077,24 @@
         pill.classList.toggle('checked', shouldCheck);
       });
 
-      detailSchedulePanel.hidden = true;
-      toggleDetailIcon.textContent = '▶';
+      // ダイアログ内のタブを初期状態（複数日時指定）にリセット
+      const tabLinks = document.querySelectorAll('#bulk-schedule-dialog .tabs a');
+      if (tabLinks.length >= 2) {
+        tabLinks[0].classList.add('active');
+        tabLinks[1].classList.remove('active');
+      }
+      const pageMulti = document.getElementById('multiple-datetime-tab');
+      const pageWeekly = document.getElementById('weekly-repeat-tab');
+      if (pageMulti) pageMulti.classList.add('active');
+      if (pageWeekly) pageWeekly.classList.remove('active');
+
+
 
       highlightStatus(ev.status);
       const calendarSection = document.getElementById('calendar-section');
       calendarSection.className = 's12 m7 l8';
       detailSection.className = 's12 m5 l4';
-      detailSection.hidden = false;
+      detailSection.style.display = 'block';
       adjustHeight(document.getElementById('detail-memo'));
     }
 
@@ -2757,10 +2206,12 @@
     document.getElementById('detail-close-btn').addEventListener('click', closeDetail);
 
     function closeDetail() {
+      const dlg = document.getElementById('bulk-schedule-dialog');
+      if (dlg && dlg.open) dlg.close();
       window.location.hash = '';
       selectedEventId = null;
       pendingStatus = null;
-      detailSection.hidden = true;
+      detailSection.style.display = 'none';
       const calendarSection = document.getElementById('calendar-section');
       calendarSection.className = 's12';
     }
@@ -2775,7 +2226,7 @@
       if (!ev) return;
       const title = document.getElementById('detail-title').value.trim() || ev.title;
       const memo = document.getElementById('detail-memo').value;
-      const duration = parseInt(document.getElementById('detail-duration').value, 10) || ev.duration || 1;
+      const duration = ev.duration || 1;
       const time = ev.time || '';
 
       const favs = loadFavorites();
@@ -2806,13 +2257,13 @@
 
     function updateNotifyBtn() {
       if (!('Notification' in window)) {
-        notifyBtn.textContent = '🔕 このブラウザは通知非対応';
+        notifyBtn.innerHTML = '<i>error</i>このブラウザは通知非対応';
         notifyBtn.disabled = true;
         return;
       }
-      notifyBtn.textContent = Notification.permission === 'granted'
-        ? '🔔 通知は有効です'
-        : '🔔 通知を有効にする';
+      notifyBtn.innerHTML = Notification.permission === 'granted'
+        ? '<i>check</i>通知は有効です'
+        : '<i>notifications</i>通知を有効にする';
     }
 
     notifyBtn.addEventListener('click', () => {
@@ -2867,24 +2318,7 @@
     // ============================================================
     // 初期化
     // ============================================================
-    const repeatTimeEl = document.getElementById('repeat-time');
-    if (repeatTimeEl) repeatTimeEl.innerHTML = getTimeOptionsHtml();
-
-    const repeatEndTimeEl = document.getElementById('repeat-end-time');
-    if (repeatEndTimeEl) repeatEndTimeEl.innerHTML = getEndTimeOptionsHtml();
-
-    const repeatDurationEl = document.getElementById('repeat-duration');
-    bindTimeAndDuration(repeatTimeEl, repeatEndTimeEl, repeatDurationEl);
-
-    if (repeatStartInput && repeatEndInput) {
-      repeatStartInput.value = todayStr();
-      setRepeatPeriodPreset(30);
-    }
-
-    if (datetimeRowsEl && datetimeRowsEl.children.length === 0) {
-      addDatetimeRow(todayStr());
-    }
-
+    initTheme();
     renderFavorites();
     updateNotifyBtn();
     renderAll();
