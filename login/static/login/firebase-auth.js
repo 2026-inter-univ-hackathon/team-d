@@ -12,6 +12,7 @@
     'auth/email-already-in-use': 'このアカウントはすでに登録されています。',
     'auth/invalid-email': 'メールアドレスの形式が正しくありません。',
     'auth/invalid-credential': 'メールアドレスまたはパスワードが違います。',
+    'auth/email-not-verified': 'メールアドレスの確認が必要です。確認メールを再送しました。',
     'auth/user-disabled': 'このアカウントは利用できません。',
     'auth/weak-password': 'パスワードは6文字以上で入力してください。',
     'auth/too-many-requests': '試行回数が多すぎます。しばらく待ってください。',
@@ -128,11 +129,19 @@
 
         await ready;
         const credential = await auth.createUserWithEmailAndPassword(email, password1);
-        if (!credential.user || typeof credential.user.updateProfile !== 'function') {
-          throw new FirebaseAuthError('ユーザープロフィールを作成できませんでした。');
+        try {
+          if (!credential.user || typeof credential.user.updateProfile !== 'function') {
+            throw new FirebaseAuthError('ユーザープロフィールを作成できませんでした。');
+          }
+          await credential.user.updateProfile({ displayName: username });
+          if (typeof credential.user.sendEmailVerification !== 'function') {
+            throw new FirebaseAuthError('確認メールを送信できませんでした。');
+          }
+          await credential.user.sendEmailVerification();
+        } finally {
+          await auth.signOut();
         }
-        await credential.user.updateProfile({ displayName: username });
-        return { user: formatUser(credential.user) };
+        return { verificationSent: true, email };
       } catch (error) {
         throw normalizeError(error);
       }
@@ -150,6 +159,17 @@
 
         await ready;
         const credential = await auth.signInWithEmailAndPassword(email, password);
+        if (!credential.user?.emailVerified) {
+          try {
+            await credential.user.sendEmailVerification();
+          } finally {
+            await auth.signOut();
+          }
+          throw new FirebaseAuthError(
+            ERROR_MESSAGES['auth/email-not-verified'],
+            'auth/email-not-verified'
+          );
+        }
         return { user: formatUser(credential.user) };
       } catch (error) {
         throw normalizeError(error);
@@ -165,6 +185,20 @@
       }
     }
 
+    async function resetPassword({ email: inputEmail }) {
+      try {
+        const email = normalizeEmail(inputEmail);
+        await ready;
+        await auth.sendPasswordResetEmail(email);
+        return { resetEmailSent: true };
+      } catch (error) {
+        if (error?.code === 'auth/user-not-found') {
+          return { resetEmailSent: true };
+        }
+        throw normalizeError(error);
+      }
+    }
+
     async function currentUser() {
       try {
         await ready;
@@ -172,7 +206,15 @@
           let unsubscribe;
           const finish = (user) => {
             if (unsubscribe) unsubscribe();
-            resolve(user ? formatUser(user) : null);
+            if (!user) {
+              resolve(null);
+              return;
+            }
+            if (!user.emailVerified) {
+              Promise.resolve(auth.signOut()).then(() => resolve(null), reject);
+              return;
+            }
+            resolve(formatUser(user));
           };
           unsubscribe = auth.onAuthStateChanged(finish, reject);
         });
@@ -181,7 +223,7 @@
       }
     }
 
-    return { signup, login, logout, currentUser, auth };
+    return { signup, login, logout, resetPassword, currentUser, auth };
   }
 
   return { create, normalizeEmail, normalizeUsername, FirebaseAuthError };

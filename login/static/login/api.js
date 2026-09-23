@@ -58,6 +58,9 @@ window.LoginApi = (() => {
       await initialized.authClient.logout();
       return { loggedOut: true };
     }
+    if (path === '/api/auth/password-reset/' && normalizedMethod === 'POST') {
+      return initialized.authClient.resetPassword(data);
+    }
     if (path === '/api/auth/me/' && normalizedMethod === 'GET') {
       const user = await initialized.authClient.currentUser();
       if (!user) requireLogin();

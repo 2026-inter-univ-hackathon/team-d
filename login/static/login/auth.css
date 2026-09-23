@@ -14,6 +14,8 @@ input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid 
 .address { display: flex; align-items: center; gap: 8px; }
 .hint { font-size: .875rem; color: #555; margin: 6px 0; }
 .errorlist { color: #a32626; padding-left: 20px; font-size: .875rem; white-space: pre-line; }
+.successlist { color: #176b35; font-size: .875rem; white-space: pre-line; }
 button { margin-top: 24px; width: 100%; background: #2b6cb0; color: white; padding: 12px; border: 0; border-radius: 4px; font: inherit; cursor: pointer; }
+button.secondary { margin-top: 12px; background: white; color: #245b94; border: 1px solid #8aa4bf; }
 button:disabled { cursor: wait; opacity: .7; }
 @media (max-width: 360px) { section { padding: 16px; } .address { flex-wrap: wrap; } }

@@ -4,7 +4,9 @@
   if (!form) return;
 
   const errorBox = document.getElementById('auth-error');
+  const infoBox = document.getElementById('auth-info');
   const submitButton = form.querySelector('button[type="submit"]');
+  const resetButton = document.getElementById('password-reset');
 
   const fieldLabels = {
     email: 'メールアドレス',
@@ -24,6 +26,7 @@
     submitting = true;
     submitButton.disabled = true;
     errorBox.textContent = '';
+    infoBox.textContent = '';
 
     const originalLabel = submitButton.textContent;
     submitButton.textContent = '処理しています…';
@@ -48,7 +51,7 @@
         ? '/api/auth/signup/'
         : '/api/auth/login/';
 
-      await LoginApi.request(endpoint, {
+      const result = await LoginApi.request(endpoint, {
         method: 'POST',
         data,
       });
@@ -59,6 +62,11 @@
           input.value = '';
         }
       );
+
+      if (isSignup && result.verificationSent) {
+        infoBox.textContent = '確認メールを送信しました。メール内のリンクを開いてからログインしてください。';
+        return;
+      }
 
       // 公開時にはPagesのカレンダーURLをHTML側で指定する
       window.location.assign(form.dataset.successUrl || '/');
@@ -86,4 +94,33 @@
       submitButton.textContent = originalLabel;
     }
   });
+
+  if (resetButton) {
+    resetButton.addEventListener('click', async () => {
+      if (submitting) return;
+      submitting = true;
+      submitButton.disabled = true;
+      resetButton.disabled = true;
+      errorBox.textContent = '';
+      infoBox.textContent = '';
+      const originalLabel = resetButton.textContent;
+      resetButton.textContent = '送信しています…';
+
+      try {
+        const inputs = new FormData(form);
+        await LoginApi.request('/api/auth/password-reset/', {
+          method: 'POST',
+          data: { email: String(inputs.get('email') || '').trim() },
+        });
+        infoBox.textContent = '登録状況にかかわらず、再設定可能な場合はメールを送信しました。';
+      } catch (error) {
+        errorBox.textContent = error.message || '処理に失敗しました。';
+      } finally {
+        submitting = false;
+        submitButton.disabled = false;
+        resetButton.disabled = false;
+        resetButton.textContent = originalLabel;
+      }
+    });
+  }
 })();

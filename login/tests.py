@@ -20,9 +20,12 @@ class AuthPageTests(TestCase):
                 self.assertContains(response, 'id="auth-form"')
                 self.assertContains(response, f'data-mode="{mode}"')
                 self.assertContains(response, 'name="email"')
+                self.assertContains(response, 'id="auth-info"')
                 self.assertNotContains(response, '<span>@example.com</span>')
                 if mode == "signup":
                     self.assertContains(response, 'name="username"')
+                else:
+                    self.assertContains(response, 'id="password-reset"')
                 self.assertContains(response, 'firebase-auth-compat.js')
                 self.assertContains(response, 'login/firebase-auth.js')
                 self.assertContains(response, 'firebase-events.js')

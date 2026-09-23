@@ -14,11 +14,16 @@ function setup({ mode = 'login', values = {}, request, successUrl, missingForm =
   const passwordNames = mode === 'signup' ? ['password1', 'password2'] : ['password'];
   const passwords = passwordNames.map(name => ({ value: fields[name] }));
   const button = { textContent: mode === 'signup' ? '新規登録' : 'ログイン', disabled: false };
+  const resetButton = mode === 'login'
+    ? { textContent: 'パスワード再設定メールを送る', disabled: false, addEventListener(name, fn) { assert.equal(name, 'click'); resetHandler = fn; } }
+    : null;
   const errors = { textContent: '' };
+  const info = { textContent: '' };
   const calls = [];
   const order = [];
   const redirects = [];
   let handler;
+  let resetHandler;
   let prevented = 0;
   const form = {
     dataset: { mode, ...(successUrl ? { successUrl } : {}) },
@@ -30,6 +35,8 @@ function setup({ mode = 'login', values = {}, request, successUrl, missingForm =
     document: { getElementById(id) {
       if (id === 'auth-form') return missingForm ? null : form;
       if (id === 'auth-error') return errors;
+      if (id === 'auth-info') return info;
+      if (id === 'password-reset') return resetButton;
       throw Error(`Unexpected element: ${id}`);
     } },
     FormData: class {
@@ -40,16 +47,20 @@ function setup({ mode = 'login', values = {}, request, successUrl, missingForm =
       async request(endpoint, options) {
         calls.push({ endpoint, options });
         order.push('request');
-        return request ? request(endpoint, options) : { user: { id: 'user-1' } };
+        if (request) return request(endpoint, options);
+        return endpoint === '/api/auth/signup/'
+          ? { verificationSent: true }
+          : { user: { id: 'user-1' } };
       },
     },
     window: { location: { assign(url) { redirects.push(url); order.push('redirect'); } } },
   };
   vm.runInNewContext(source, sandbox);
-  return { calls, order, redirects, button, errors, passwords, fields,
+  return { calls, order, redirects, button, resetButton, errors, info, passwords, fields,
     handler: () => handler,
     prevented: () => prevented,
     submit: () => handler({ preventDefault() { prevented++; } }),
+    resetPassword: () => resetHandler(),
   };
 }
 
@@ -70,7 +81,7 @@ test('login sends credentials to Firebase adapter before navigation and clears p
   assert.equal(state.prevented(), 1);
 });
 
-test('signup sends both passwords to signup API and defaults navigation to local root', async () => {
+test('signup shows verification guidance without opening the calendar', async () => {
   const state = setup({ mode: 'signup' });
   await state.submit();
   assert.equal(state.calls[0].endpoint, '/api/auth/signup/');
@@ -79,7 +90,8 @@ test('signup sends both passwords to signup API and defaults navigation to local
     password1: '123456', password2: '123456',
   });
   assert.ok(state.passwords.every(input => input.value === ''));
-  assert.deepEqual(state.redirects, ['/']);
+  assert.deepEqual(state.redirects, []);
+  assert.match(state.info.textContent, /確認メールを送信/);
   assert.equal(state.button.textContent, '新規登録');
 });
 
@@ -133,6 +145,18 @@ test('Firebase login failure does not navigate or clear password', async () => {
   assert.equal(state.errors.textContent, 'メールアドレスまたはパスワードが違います。');
   assert.equal(state.passwords[0].value, '123456');
   assert.equal(state.button.disabled, false);
+  assert.deepEqual(state.redirects, []);
+});
+
+test('password reset uses the entered email and shows a neutral result', async () => {
+  const state = setup();
+  await state.resetPassword();
+  assert.equal(state.calls[0].endpoint, '/api/auth/password-reset/');
+  assert.deepEqual(JSON.parse(JSON.stringify(state.calls[0].options.data)), {
+    email: 'alice@example.com',
+  });
+  assert.match(state.info.textContent, /登録状況にかかわらず/);
+  assert.equal(state.resetButton.disabled, false);
   assert.deepEqual(state.redirects, []);
 });
 

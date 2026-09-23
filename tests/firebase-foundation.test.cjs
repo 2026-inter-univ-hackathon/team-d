@@ -32,6 +32,7 @@ test('Firestore rules restrict every event operation to its authenticated owner'
 
   assert.match(rules, /request\.auth != null/);
   assert.match(rules, /request\.auth\.uid == userId/);
+  assert.match(rules, /request\.auth\.token\.email_verified == true/);
   assert.match(rules, /match \/users\/\{userId\}\/events\/\{eventId\}/);
   assert.match(rules, /allow read: if isOwner\(userId\)/);
   assert.match(rules, /allow create: if isOwner\(userId\)/);

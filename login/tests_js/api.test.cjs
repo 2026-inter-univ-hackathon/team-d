@@ -16,6 +16,7 @@ function setup({ user = { id: 'owner-1', email: 'alice@example.com' }, omitClien
     async signup(data) { calls.push(['signup', data]); return { user }; },
     async login(data) { calls.push(['login', data]); return { user }; },
     async logout() { calls.push(['logout']); },
+    async resetPassword(data) { calls.push(['password-reset', data]); return { resetEmailSent: true }; },
     async currentUser() { calls.push(['currentUser']); return user; },
   };
   const eventsClient = {
@@ -120,6 +121,18 @@ test('logs out with Firebase Authentication and rejects unsupported routes', asy
   assert.ok(calls.some((call) => call[0] === 'logout'));
   await assert.rejects(api.request('/login/'), /接続先が正しくありません/);
   await assert.rejects(api.request('/api/unknown/'), (error) => error.status === 404);
+});
+
+test('routes password reset through Firebase Authentication', async () => {
+  const { api, calls } = setup();
+  const data = { email: 'alice@example.com' };
+  assert.deepEqual(
+    plain(await api.request('/api/auth/password-reset/', { method: 'POST', data })),
+    { resetEmailSent: true }
+  );
+  assert.deepEqual(calls.find((call) => call[0] === 'password-reset'), [
+    'password-reset', data,
+  ]);
 });
 
 test('reports missing Firebase client scripts before making a request', async () => {

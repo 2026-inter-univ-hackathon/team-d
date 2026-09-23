@@ -18,6 +18,7 @@
     <h2>アカウントを作成</h2>
     <form id="auth-form" data-mode="signup" data-success-url="/">
       <div id="auth-error" class="errorlist" role="alert" aria-live="assertive"></div>
+      <div id="auth-info" class="successlist" role="status" aria-live="polite"></div>
       <label for="id_email">メールアドレス</label>
       <input id="id_email" name="email" type="email" maxlength="254" required autocomplete="email" autocapitalize="none" spellcheck="false">
       <label for="id_username">ユーザー名</label>
@@ -29,7 +30,7 @@
       <label for="id_password2">パスワード（確認）</label>
       <input id="id_password2" name="password2" type="password" minlength="6" required autocomplete="new-password">
       <button type="submit">新規登録</button>
-      <p class="hint">登録したメールアドレスはログインと今後の予定通知に使用します。</p>
+      <p class="hint">登録後に確認メールを送信します。メール内のリンクを開いてからログインしてください。</p>
     </form>
   </section>
 </main>

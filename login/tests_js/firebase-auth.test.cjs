@@ -10,12 +10,14 @@ const config = {
   appId: 'web-app-id',
 };
 
-function fakeUser(uid, email, displayName = '') {
+function fakeUser(uid, email, displayName = '', emailVerified = true, calls = []) {
   return {
     uid,
     email,
     displayName,
+    emailVerified,
     async updateProfile(profile) { this.displayName = profile.displayName; },
+    async sendEmailVerification() { calls.push(['verification', email]); },
   };
 }
 
@@ -24,12 +26,13 @@ function fakeFirebase(changes = {}) {
   const auth = {
     setPersistence: async (value) => calls.push(['persistence', value]),
     createUserWithEmailAndPassword: async (email, password) => ({
-      user: fakeUser('new-user', email),
+      user: fakeUser('new-user', email, '', false, calls),
     }),
     signInWithEmailAndPassword: async (email, password) => ({
       user: fakeUser('login-user', email, 'ログインユーザー'),
     }),
     signOut: async () => calls.push(['logout']),
+    sendPasswordResetEmail: async (email) => calls.push(['password-reset', email]),
     onAuthStateChanged: (success) => {
       queueMicrotask(() => success(changes.currentUser || null));
       return () => calls.push(['unsubscribe']);
@@ -76,7 +79,7 @@ test('sets tab-scoped persistence and signs up with normalized credentials', asy
   const calls = [];
   setup.auth.createUserWithEmailAndPassword = async (...args) => {
     calls.push(args);
-    return { user: fakeUser('uid-1', args[0]) };
+    return { user: fakeUser('uid-1', args[0], '', false, setup.calls) };
   };
   const client = FirebaseAuthClient.create({ firebase: setup.firebase, config });
   assert.equal(client.auth, setup.auth);
@@ -89,9 +92,9 @@ test('sets tab-scoped persistence and signs up with normalized credentials', asy
   assert.deepEqual(setup.calls[0], ['initialize', config]);
   assert.deepEqual(setup.calls[1], ['persistence', 'session']);
   assert.deepEqual(calls, [['alice@example.com', '123456']]);
-  assert.deepEqual(result, {
-    user: { id: 'uid-1', email: 'alice@example.com', username: 'Alice' },
-  });
+  assert.deepEqual(result, { verificationSent: true, email: 'alice@example.com' });
+  assert.ok(setup.calls.some((call) => call[0] === 'verification'));
+  assert.ok(setup.calls.some((call) => call[0] === 'logout'));
 });
 
 test('rejects short and mismatched passwords before contacting Firebase', async () => {
@@ -149,6 +152,51 @@ test('logs in, restores the current user, and logs out without storing a passwor
   assert.ok(setup.calls.some((call) => call[0] === 'unsubscribe'));
   assert.ok(setup.calls.some((call) => call[0] === 'logout'));
   assert.equal(JSON.stringify(setup.calls).includes('secret1'), false);
+});
+
+test('rejects an unverified login, resends verification, and signs out', async () => {
+  const setup = fakeFirebase();
+  setup.auth.signInWithEmailAndPassword = async (email) => ({
+    user: fakeUser('unverified', email, 'Alice', false, setup.calls),
+  });
+  const client = FirebaseAuthClient.create({ firebase: setup.firebase, config });
+
+  await assert.rejects(
+    client.login({ email: 'alice@example.com', password: '123456' }),
+    (error) => error.code === 'auth/email-not-verified' && /再送/.test(error.message)
+  );
+  assert.ok(setup.calls.some((call) => call[0] === 'verification'));
+  assert.ok(setup.calls.some((call) => call[0] === 'logout'));
+});
+
+test('signs out a restored session when its email is not verified', async () => {
+  const setup = fakeFirebase({
+    currentUser: fakeUser('unverified', 'alice@example.com', 'Alice', false),
+  });
+  const client = FirebaseAuthClient.create({ firebase: setup.firebase, config });
+
+  assert.equal(await client.currentUser(), null);
+  assert.ok(setup.calls.some((call) => call[0] === 'logout'));
+});
+
+test('sends password reset without revealing an unknown account', async () => {
+  const setup = fakeFirebase();
+  const client = FirebaseAuthClient.create({ firebase: setup.firebase, config });
+  assert.deepEqual(
+    await client.resetPassword({ email: ' Alice@Example.com ' }),
+    { resetEmailSent: true }
+  );
+  assert.ok(setup.calls.some((call) => (
+    call[0] === 'password-reset' && call[1] === 'alice@example.com'
+  )));
+
+  setup.auth.sendPasswordResetEmail = async () => {
+    throw { code: 'auth/user-not-found' };
+  };
+  assert.deepEqual(
+    await client.resetPassword({ email: 'missing@example.com' }),
+    { resetEmailSent: true }
+  );
 });
 
 test('converts Firebase errors to safe Japanese messages', async () => {
