@@ -281,6 +281,30 @@
       background: rgba(255, 255, 255, .7);
     }
 
+    /* ---------------- timeline: endtime unset styles ---------------- */
+    .timed-event.endtime-unset {
+      border-bottom: 3px dashed #fff !important;
+      position: relative;
+    }
+
+    .timed-event.status-tentative.endtime-unset {
+      border-bottom: 3px dashed var(--accent) !important;
+    }
+
+    .timed-event.status-completed.endtime-unset {
+      border-bottom: 3px dashed #888 !important;
+    }
+
+    .timed-event.endtime-unset .endtime-hint {
+      position: absolute;
+      right: 6px;
+      bottom: 2px;
+      font-size: .7rem;
+      font-weight: bold;
+      opacity: .85;
+      pointer-events: none;
+    }
+
     /* ---------------- detail panel ---------------- */
     #detail-section label {
       display: block;
@@ -291,6 +315,273 @@
 
     #detail-section .row {
       margin-top: 12px;
+    }
+
+    /* ---------------- favorites ---------------- */
+    .favorites-section {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
+
+    .favorites-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .favorites-title {
+      font-size: .85rem;
+      font-weight: bold;
+      color: #4a5568;
+    }
+
+    .favorites-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .fav-chip {
+      display: inline-flex;
+      align-items: center;
+      background: #eef4fb;
+      color: var(--accent);
+      border: 1px solid #c7dcf3;
+      border-radius: 16px;
+      padding: 3px 10px;
+      font-size: .85rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+
+    .fav-chip:hover {
+      background: #dce8f7;
+      border-color: var(--accent);
+    }
+
+    .fav-chip.applied {
+      animation: fav-pulse 0.3s ease-in-out;
+    }
+
+    @keyframes fav-pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.06); background: #c3daf5; }
+      100% { transform: scale(1); }
+    }
+
+    .fav-chip .remove-fav {
+      margin-left: 6px;
+      color: #888;
+      font-size: .95rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+      border-radius: 50%;
+    }
+
+    .fav-chip .remove-fav:hover {
+      color: #c0392b;
+      font-weight: bold;
+    }
+
+    /* ---------------- history dropdown ---------------- */
+    .input-history-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .history-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      z-index: 100;
+      max-height: 230px;
+      overflow-y: auto;
+    }
+
+    .history-header {
+      padding: 6px 12px;
+      font-size: .75rem;
+      font-weight: bold;
+      color: #666;
+      background: #f7fafc;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item {
+      padding: 8px 12px;
+      font-size: .85rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background .15s;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-item:hover {
+      background: #eef4fb;
+      color: var(--accent);
+    }
+
+    .history-meta {
+      font-size: .75rem;
+      color: #888;
+      margin-left: 8px;
+    }
+
+    /* ---------------- schedule options panel ---------------- */
+    .toggle-schedule-btn {
+      background: transparent;
+      color: var(--accent);
+      padding: 4px 8px;
+      font-size: .9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .toggle-schedule-btn:hover {
+      text-decoration: underline;
+      background: #f0f4f9;
+      border-color: #d0e0f0;
+    }
+
+    .schedule-options-panel {
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid #ccd5e0;
+      border-radius: 6px;
+      background: #fcfdfe;
+    }
+
+    .schedule-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tab-btn {
+      background: #eee;
+      color: var(--fg);
+      padding: 6px 14px;
+      font-size: .85rem;
+      border-radius: 4px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .datetime-rows-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .datetime-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+    }
+
+    .weekday-selector {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .weekday-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: .85rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+
+    .weekday-pill input {
+      display: none;
+    }
+
+    .weekday-pill.checked {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .weekday-pill.weekend {
+      color: #c0392b;
+    }
+
+    .weekday-pill.weekend.checked {
+      background: #c0392b;
+      color: #fff;
+      border-color: #c0392b;
+    }
+
+    .small-btn {
+      padding: 4px 10px;
+      font-size: .8rem;
+    }
+
+    .schedule-options-footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .feedback-msg {
+      font-size: .85rem;
+      color: #2e7d32;
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 4px;
+      padding: 6px 12px;
+      margin-top: 8px;
+      display: none;
     }
   </style>
 </head>
@@ -336,13 +627,102 @@
       </div>
     </section>
 
-    <section>
-      <h2>未確定トレイ（日時未定の予定）</h2>
+    <section id="input-section">
+      <h2>予定の入力</h2>
+
+      <!-- お気に入り一覧 -->
+      <div class="favorites-section">
+        <div class="favorites-header">
+          <span class="favorites-title">⭐ よく使う予定（お気に入り）:</span>
+          <span class="muted" style="font-size: .8rem;">クリックで入力欄に反映</span>
+        </div>
+        <div id="favorites-list" class="favorites-list"></div>
+      </div>
+
+      <!-- タイトル入力＆基本ボタン -->
       <div class="row">
-        <input id="new-title" type="text" maxlength="200" aria-label="予定のタイトル" placeholder="予定のタイトル" style="flex:1">
+        <div class="input-history-wrapper">
+          <input id="new-title" type="text" placeholder="予定のタイトル（例: ゼミ、アルバイト、定例ミーティング）" style="width: 100%;" autocomplete="off">
+          <div id="history-dropdown" class="history-dropdown" hidden></div>
+        </div>
+        <button id="add-favorite-btn" class="secondary" type="button" title="入力中の内容をお気に入りに追加">⭐ お気に入り保存</button>
         <button id="add-event">トレイに追加</button>
       </div>
-      <p class="muted">ここに追加した予定は、下のカレンダー／タイムラインへドラッグして日時を割り当ててください。</p>
+
+      <!-- 日時指定・繰り返し設定トグル -->
+      <div style="margin-top: 8px;">
+        <button id="toggle-schedule-btn" class="toggle-schedule-btn" type="button">
+          <span id="toggle-icon">▶</span> 日時指定・繰り返し設定（複数日時 / 毎週など）
+        </button>
+      </div>
+
+      <!-- 展開パネル -->
+      <div id="schedule-options-panel" class="schedule-options-panel" hidden>
+        <div class="schedule-tabs">
+          <button id="tab-multiple" class="tab-btn active" type="button">📅 複数日時指定</button>
+          <button id="tab-repeat" class="tab-btn" type="button">🔄 毎週繰り返し</button>
+        </div>
+
+        <!-- 複数日時指定タブ -->
+        <div id="panel-multiple">
+          <p class="muted" style="margin: 0 0 8px;">候補日や、複数の日時に同じ予定を一括配置できます。</p>
+          <div id="datetime-rows" class="datetime-rows-list"></div>
+          <button id="add-datetime-row" class="secondary small-btn" type="button" style="margin-top: 8px;">＋ 日時を追加</button>
+        </div>
+
+        <!-- 毎週繰り返しタブ -->
+        <div id="panel-repeat" hidden>
+          <p class="muted" style="margin: 0 0 8px;">毎週決まった曜日の定期予定（授業・バイト・定例など）を一括作成します。</p>
+          <div class="row" style="margin-bottom: 8px;">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">曜日:</span>
+            <div class="weekday-selector">
+              <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="1">月</label>
+              <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="2">火</label>
+              <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="3">水</label>
+              <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="4">木</label>
+              <label class="weekday-pill"><input type="checkbox" name="repeat-day" value="5">金</label>
+              <label class="weekday-pill weekend"><input type="checkbox" name="repeat-day" value="6">土</label>
+              <label class="weekday-pill weekend"><input type="checkbox" name="repeat-day" value="0">日</label>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom: 8px; align-items: center;">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">時間帯:</span>
+            <label style="font-size: .85rem; margin: 0;">開始: <select id="repeat-time"></select></label>
+            <span>〜</span>
+            <label style="font-size: .85rem; margin: 0;">終了: <select id="repeat-end-time"></select></label>
+            <label style="font-size: .85rem; margin: 0;">所要時間: 
+              <input id="repeat-duration" type="number" min="1" max="24" value="1" style="width: 4.5em;"> 時間
+            </label>
+          </div>
+          <div class="row">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">期間:</span>
+            <input id="repeat-start" type="date">
+            <span>〜</span>
+            <input id="repeat-end" type="date">
+            <button id="preset-2w" class="secondary small-btn" type="button">2週間</button>
+            <button id="preset-1m" class="secondary small-btn" type="button">1ヶ月</button>
+            <button id="preset-3m" class="secondary small-btn" type="button">3ヶ月</button>
+          </div>
+        </div>
+
+        <!-- 共通フッター -->
+        <div class="schedule-options-footer">
+          <div class="row" style="flex:1;">
+            <input id="bulk-memo" type="text" placeholder="メモ（任意）" style="flex:1; min-width: 140px;">
+            <label style="font-size: .85rem;">ステータス:
+              <select id="bulk-status">
+                <option value="TENTATIVE">未確定（仮）</option>
+                <option value="CONFIRMED">確定</option>
+              </select>
+            </label>
+          </div>
+          <button id="bulk-add-btn" type="button">📅 カレンダーに一括追加</button>
+        </div>
+      </div>
+
+      <div id="schedule-feedback" class="feedback-msg"></div>
+
+      <p class="muted" style="margin-top: 14px; margin-bottom: 6px;">未確定トレイ（日時未定の予定）: ドラッグして下のカレンダー／タイムラインへ配置できます。</p>
       <div id="tray"></div>
     </section>
 
@@ -361,22 +741,95 @@
        人がこのパネルのボタンを押すまで自動では変わりません。
        ============================================================ -->
     <section id="detail-section" hidden>
-      <h2>予定の詳細</h2>
-      <label for="detail-title">タイトル</label>
-      <input id="detail-title" type="text" maxlength="200">
-      <label for="detail-memo">メモ</label>
-      <textarea id="detail-memo" rows="2" maxlength="10000"></textarea>
-      <label for="detail-duration">所要時間（時間）</label>
-      <input id="detail-duration" type="number" min="1" max="24" step="1" style="width:6em">
-      <p class="muted">タイムライン表示では予定ブロックの下端をドラッグしても変更できます。</p>
-      <label>ステータス（人が決める）</label>
+      <h2>予定の詳細・日時設定</h2>
+      <label>タイトル</label>
+      <input id="detail-title" type="text">
+      <label>メモ</label>
+      <textarea id="detail-memo" rows="2"></textarea>
+
+      <!-- 日時設定エリア -->
+      <label>日時設定（カレンダーへの配置）</label>
+      <div class="row" style="align-items: center;">
+        <label style="font-size: .85rem; margin: 0;">日付: <input id="detail-date" type="date"></label>
+        <label style="font-size: .85rem; margin: 0;">開始: <select id="detail-time"></select></label>
+        <span>〜</span>
+        <label style="font-size: .85rem; margin: 0;">終了: <select id="detail-end-time"></select></label>
+        <label style="font-size: .85rem; margin: 0;">所要時間: 
+          <input id="detail-duration" type="number" min="1" max="24" step="1" style="width: 4.5em;"> 時間
+        </label>
+        <span id="detail-date-badge" class="muted" style="font-size: .85rem; font-weight: bold;"></span>
+      </div>
+      <p class="muted" style="font-size: .8rem; margin: 4px 0 8px;">※日付を指定して「保存」するとカレンダーに配置されます。日付を空欄にするか「日時をクリア」を押すとトレイへ戻ります。</p>
+
+      <!-- 複数日時指定・繰り返し展開トグル -->
+      <div style="margin-top: 8px;">
+        <button id="toggle-detail-schedule-btn" class="toggle-schedule-btn" type="button">
+          <span id="toggle-detail-icon">▶</span> この予定を複数日時に配置 / 毎週繰り返し展開
+        </button>
+      </div>
+
+      <!-- 展開パネル -->
+      <div id="detail-schedule-panel" class="schedule-options-panel" hidden style="background: #f8fafc; border: 1px dashed var(--line); margin-top: 6px;">
+        <p class="muted" style="margin: 0 0 8px; font-size: .85rem;">この予定の内容（タイトル・メモ・所要時間）を引き継ぎ、複数日程や定期予定としてカレンダーに展開します。</p>
+        <div class="schedule-tabs">
+          <button id="detail-tab-multiple" class="tab-btn active" type="button">📅 複数日時指定</button>
+          <button id="detail-tab-repeat" class="tab-btn" type="button">🔄 毎週繰り返し</button>
+        </div>
+
+        <!-- 複数日時指定タブ -->
+        <div id="detail-panel-multiple">
+          <p class="muted" style="margin: 0 0 8px; font-size: .8rem;">複数の候補日や、同じ予定を複数日に設定します。</p>
+          <div id="detail-datetime-rows" class="datetime-rows-list"></div>
+          <button id="detail-add-datetime-row" class="secondary small-btn" type="button" style="margin-top: 8px;">＋ 日時を追加</button>
+        </div>
+
+        <!-- 毎週繰り返しタブ -->
+        <div id="detail-panel-repeat" hidden>
+          <p class="muted" style="margin: 0 0 8px; font-size: .8rem;">毎週決まった曜日の定期予定として一括展開します。</p>
+          <div class="row" style="margin-bottom: 8px;">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">曜日:</span>
+            <div class="weekday-selector">
+              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="1">月</label>
+              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="2">火</label>
+              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="3">水</label>
+              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="4">木</label>
+              <label class="weekday-pill"><input type="checkbox" name="detail-repeat-day" value="5">金</label>
+              <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="6">土</label>
+              <label class="weekday-pill weekend"><input type="checkbox" name="detail-repeat-day" value="0">日</label>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom: 8px; align-items: center;">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">時間帯:</span>
+            <label style="font-size: .85rem; margin: 0;">開始: <select id="detail-repeat-time"></select></label>
+            <span>〜</span>
+            <label style="font-size: .85rem; margin: 0;">終了: <select id="detail-repeat-end-time"></select></label>
+          </div>
+          <div class="row">
+            <span style="font-weight: bold; font-size: .85rem; width: 4.5em;">期間:</span>
+            <input id="detail-repeat-start" type="date">
+            <span>〜</span>
+            <input id="detail-repeat-end" type="date">
+            <button id="detail-preset-2w" class="secondary small-btn" type="button">2週間</button>
+            <button id="detail-preset-1m" class="secondary small-btn" type="button">1ヶ月</button>
+            <button id="detail-preset-3m" class="secondary small-btn" type="button">3ヶ月</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 12px; justify-content: flex-end;">
+          <button id="detail-bulk-expand-btn" type="button">📅 カレンダーに一括展開</button>
+        </div>
+      </div>
+
+      <label style="margin-top: 12px;">ステータス（人が決める）</label>
       <div class="row">
         <button id="status-tentative" class="secondary">未確定</button>
         <button id="status-confirmed" class="secondary">確定</button>
         <button id="status-completed" class="secondary">完了</button>
       </div>
-      <div class="row">
+      <div class="row" style="margin-top: 14px;">
         <button id="detail-save">保存</button>
+        <button id="detail-load-to-input" class="secondary" type="button" title="上部の入力欄にこの予定を読み込みます">📝 入力欄に読み込む</button>
+        <button id="detail-favorite" class="secondary" type="button" title="この予定をお気に入りテンプレートに登録">⭐ お気に入りに追加</button>
         <button id="detail-clear-date" class="secondary">日時をクリア（トレイへ戻す）</button>
         <button id="detail-delete" class="danger">削除</button>
         <button id="detail-close" class="secondary">閉じる</button>
@@ -425,6 +878,19 @@
       if (store.busy || loading) return;
       logoutButton.disabled = true;
       setSync('ログアウトしています…');
+    const STORAGE_KEY = 'tentative_calendar_events';
+    const FAVORITES_KEY = 'tentative_calendar_favorites';
+    const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
+    const HOUR_H = 32; // タイムラインの1時間あたりの高さ(px)。CSSの .hour-row の height と合わせる
+
+    const DEFAULT_FAVORITES = [
+      { id: 'fav_1', title: 'ゼミ・研究会', duration: 2, memo: '', time: '13:00' },
+      { id: 'fav_2', title: 'アルバイト', duration: 4, memo: '', time: '17:00' },
+      { id: 'fav_3', title: '課題・レポート', duration: 1, memo: '', time: '' },
+      { id: 'fav_4', title: '定例ミーティング', duration: 1, memo: '', time: '10:00' }
+    ];
+
+    function loadEvents() {
       try {
         await LoginApi.request('/api/auth/logout/', { method: 'POST' });
         window.location.assign(loginUrl);
@@ -530,6 +996,24 @@
       }
     });
 
+    function loadFavorites() {
+      try {
+        const raw = localStorage.getItem(FAVORITES_KEY);
+        if (raw === null) {
+          localStorage.setItem(FAVORITES_KEY, JSON.stringify(DEFAULT_FAVORITES));
+          return [...DEFAULT_FAVORITES];
+        }
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveFavorites(favs) {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+    }
+
     function uid() {
       return 'ev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     }
@@ -544,6 +1028,80 @@
 
     function todayStr() {
       return dateStr(new Date());
+    }
+
+    function getTimeOptionsHtml(selectedVal = '') {
+      let html = '<option value="">指定なし（終日）</option>';
+      for (let h = 0; h < 24; h++) {
+        const t = `${pad2(h)}:00`;
+        const sel = t === selectedVal ? ' selected' : '';
+        html += `<option value="${t}"${sel}>${t}</option>`;
+      }
+      return html;
+    }
+
+    function getEndTimeOptionsHtml(selectedVal = '') {
+      let html = '<option value="">未定（指定なし）</option>';
+      for (let h = 1; h <= 24; h++) {
+        const t = `${pad2(h)}:00`;
+        const sel = t === selectedVal ? ' selected' : '';
+        html += `<option value="${t}"${sel}>${t}</option>`;
+      }
+      return html;
+    }
+
+    // 開始時刻・終了時刻・所要時間の双方向連動ヘルパー
+    function bindTimeAndDuration(timeEl, endTimeEl, durEl, onUpdate) {
+      if (!timeEl || !endTimeEl || !durEl) return;
+
+      timeEl.addEventListener('change', () => {
+        const startVal = timeEl.value;
+        if (!startVal) {
+          endTimeEl.value = '';
+        } else if (endTimeEl.value) {
+          const startH = parseInt(startVal, 10);
+          let endH = parseInt(endTimeEl.value, 10);
+          if (endH <= startH) {
+            endH = Math.min(24, startH + (parseInt(durEl.value, 10) || 1));
+            endTimeEl.value = `${pad2(endH)}:00`;
+          }
+          durEl.value = Math.max(1, endH - startH);
+        }
+        if (onUpdate) onUpdate();
+      });
+
+      endTimeEl.addEventListener('change', () => {
+        const endVal = endTimeEl.value;
+        if (endVal) {
+          const endH = parseInt(endVal, 10);
+          if (!timeEl.value) {
+            const startH = Math.max(0, endH - (parseInt(durEl.value, 10) || 1));
+            timeEl.value = `${pad2(startH)}:00`;
+            durEl.value = Math.max(1, endH - startH);
+          } else {
+            const startH = parseInt(timeEl.value, 10);
+            if (endH <= startH) {
+              const adjustedEnd = Math.min(24, startH + 1);
+              endTimeEl.value = `${pad2(adjustedEnd)}:00`;
+              durEl.value = 1;
+            } else {
+              durEl.value = Math.max(1, endH - startH);
+            }
+          }
+        }
+        if (onUpdate) onUpdate();
+      });
+
+      durEl.addEventListener('input', () => {
+        const startVal = timeEl.value;
+        const dur = Math.min(24, Math.max(1, parseInt(durEl.value, 10) || 1));
+        if (startVal && endTimeEl.value) {
+          const startH = parseInt(startVal, 10);
+          const endH = Math.min(24, startH + dur);
+          endTimeEl.value = `${pad2(endH)}:00`;
+        }
+        if (onUpdate) onUpdate();
+      });
     }
 
     // ============================================================
@@ -794,11 +1352,24 @@
     function createTimedEventChip(ev, style) {
       const chip = createEventChip(ev);
       chip.classList.add('timed-event');
+
+      const isUnset = ev.isEndTimeUnset || !ev.endTime;
+      if (isUnset) {
+        chip.classList.add('endtime-unset');
+        const hint = document.createElement('span');
+        hint.className = 'endtime-hint';
+        hint.textContent = '〜未定';
+        chip.appendChild(hint);
+        chip.title = `${ev.title}\n開始: ${ev.time} / 終了: 未定（下端ドラッグで確定可能）${ev.memo ? '\n' + ev.memo : ''}`;
+      } else {
+        chip.title = `${ev.title}\n時間: ${ev.time}〜${ev.endTime} (${ev.duration || 1}時間)${ev.memo ? '\n' + ev.memo : ''}`;
+      }
+
       Object.assign(chip.style, style);
 
       const handle = document.createElement('div');
       handle.className = 'resize-handle';
-      handle.title = 'ドラッグして所要時間を変更';
+      handle.title = isUnset ? '下端をドラッグして終了時刻を確定' : 'ドラッグして所要時間を変更';
       handle.addEventListener('dragstart', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -830,9 +1401,13 @@
       async function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
-        if (finalDuration !== startDuration) {
+        if (finalDuration !== startDuration || ev.isEndTimeUnset) {
           ev.duration = finalDuration;
           if (!await saveEvents(events)) return;
+          ev.endTime = `${pad2(startHour + finalDuration)}:00`;
+          ev.isEndTimeUnset = false;
+          saveEvents(events);
+          showFeedback(`「${ev.title}」の終了時刻を ${ev.endTime} に確定しました 🕒`);
         }
         renderAll();
       }
@@ -871,6 +1446,557 @@
     });
 
     // ============================================================
+    // フィードバックメッセージ表示
+    // ============================================================
+    function showFeedback(msg) {
+      const el = document.getElementById('schedule-feedback');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => {
+        el.style.display = 'none';
+      }, 4000);
+    }
+
+    // ============================================================
+    // お気に入り機能（Favorites）
+    // ============================================================
+    const favoritesListEl = document.getElementById('favorites-list');
+
+    function renderFavorites() {
+      const favs = loadFavorites();
+      favoritesListEl.innerHTML = '';
+      if (favs.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'muted';
+        empty.style.fontSize = '.8rem';
+        empty.textContent = 'お気に入りはまだありません（タイトル入力後に「⭐ お気に入り保存」で追加）';
+        favoritesListEl.appendChild(empty);
+        return;
+      }
+
+      favs.forEach(fav => {
+        const chip = document.createElement('span');
+        chip.className = 'fav-chip';
+        const info = [];
+        if (fav.time) info.push(fav.time);
+        if (fav.duration) info.push(`${fav.duration}時間`);
+        const infoText = info.length > 0 ? ` [${info.join(', ')}]` : '';
+        chip.title = `${fav.title}${infoText}${fav.memo ? '\n' + fav.memo : ''}\nクリックで入力欄に反映`;
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = fav.title;
+        chip.appendChild(titleSpan);
+
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'remove-fav';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.title = 'お気に入りから削除';
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!confirm(`「${fav.title}」をお気に入りから削除してもよろしいですか？`)) {
+            return;
+          }
+          const currentFavs = loadFavorites().filter(f => f.id !== fav.id);
+          saveFavorites(currentFavs);
+          renderFavorites();
+          showFeedback(`「${fav.title}」をお気に入りから削除しました`);
+        });
+        chip.appendChild(removeBtn);
+
+        chip.addEventListener('click', () => {
+          applyFavorite(fav, chip);
+        });
+
+        favoritesListEl.appendChild(chip);
+      });
+    }
+
+    function applyFavorite(fav, chipEl) {
+      const input = document.getElementById('new-title');
+      input.value = fav.title;
+      input.focus();
+
+      const memoInput = document.getElementById('bulk-memo');
+      if (memoInput && fav.memo !== undefined) {
+        memoInput.value = fav.memo;
+      }
+
+      if (fav.duration) {
+        const repeatDuration = document.getElementById('repeat-duration');
+        if (repeatDuration) repeatDuration.value = fav.duration;
+        document.querySelectorAll('.row-duration').forEach(el => {
+          el.value = fav.duration;
+        });
+      }
+
+      if (fav.time !== undefined) {
+        const repeatTime = document.getElementById('repeat-time');
+        if (repeatTime) repeatTime.value = fav.time;
+        document.querySelectorAll('.row-time').forEach(el => {
+          el.value = fav.time;
+        });
+      }
+
+      if (chipEl) {
+        chipEl.classList.remove('applied');
+        void chipEl.offsetWidth;
+        chipEl.classList.add('applied');
+      }
+
+      showFeedback(`「${fav.title}」を入力欄に反映しました ✨`);
+    }
+
+    function addFavoriteFromInput() {
+      const input = document.getElementById('new-title');
+      const title = input.value.trim();
+      if (!title) {
+        alert('お気に入りに保存する予定のタイトルを入力してください。');
+        input.focus();
+        return;
+      }
+
+      const memo = document.getElementById('bulk-memo')?.value || '';
+      const duration = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
+      const time = document.getElementById('repeat-time')?.value || '';
+
+      const favs = loadFavorites();
+      const existing = favs.find(f => f.title === title);
+      if (existing) {
+        existing.memo = memo;
+        existing.duration = duration;
+        existing.time = time;
+      } else {
+        favs.push({
+          id: 'fav_' + Date.now().toString(36),
+          title,
+          duration,
+          memo,
+          time
+        });
+      }
+      saveFavorites(favs);
+      renderFavorites();
+      showFeedback(`「${title}」をお気に入りに保存しました ⭐`);
+    }
+
+    document.getElementById('add-favorite-btn').addEventListener('click', addFavoriteFromInput);
+
+    // ============================================================
+    // 日時指定・繰り返し設定（複数日時 / 毎週など）
+    // ============================================================
+    const toggleScheduleBtn = document.getElementById('toggle-schedule-btn');
+    const scheduleOptionsPanel = document.getElementById('schedule-options-panel');
+    const toggleIcon = document.getElementById('toggle-icon');
+
+    toggleScheduleBtn.addEventListener('click', () => {
+      const isHidden = scheduleOptionsPanel.hidden;
+      scheduleOptionsPanel.hidden = !isHidden;
+      toggleIcon.textContent = isHidden ? '▼' : '▶';
+    });
+
+    let activeScheduleTab = 'multiple'; // 'multiple' | 'repeat'
+    const tabMultipleBtn = document.getElementById('tab-multiple');
+    const tabRepeatBtn = document.getElementById('tab-repeat');
+    const panelMultiple = document.getElementById('panel-multiple');
+    const panelRepeat = document.getElementById('panel-repeat');
+
+    tabMultipleBtn.addEventListener('click', () => {
+      activeScheduleTab = 'multiple';
+      tabMultipleBtn.className = 'tab-btn active';
+      tabRepeatBtn.className = 'tab-btn';
+      panelMultiple.hidden = false;
+      panelRepeat.hidden = true;
+    });
+
+    tabRepeatBtn.addEventListener('click', () => {
+      activeScheduleTab = 'repeat';
+      tabRepeatBtn.className = 'tab-btn active';
+      tabMultipleBtn.className = 'tab-btn';
+      panelMultiple.hidden = true;
+      panelRepeat.hidden = false;
+    });
+
+    // 曜日選択のクリック連動
+    document.querySelectorAll('.weekday-pill').forEach(pill => {
+      const checkbox = pill.querySelector('input[type="checkbox"]');
+      if (!checkbox) return;
+      pill.addEventListener('click', () => {
+        setTimeout(() => {
+          pill.classList.toggle('checked', checkbox.checked);
+        }, 0);
+      });
+    });
+
+    // 期間プリセットボタン
+    const repeatStartInput = document.getElementById('repeat-start');
+    const repeatEndInput = document.getElementById('repeat-end');
+
+    function setRepeatPeriodPreset(days) {
+      const start = repeatStartInput.value ? new Date(repeatStartInput.value + 'T00:00:00') : new Date();
+      repeatStartInput.value = dateStr(start);
+      const end = new Date(start);
+      end.setDate(end.getDate() + days);
+      repeatEndInput.value = dateStr(end);
+    }
+
+    document.getElementById('preset-2w').addEventListener('click', () => setRepeatPeriodPreset(14));
+    document.getElementById('preset-1m').addEventListener('click', () => setRepeatPeriodPreset(30));
+    document.getElementById('preset-3m').addEventListener('click', () => setRepeatPeriodPreset(90));
+
+    // 複数日時の行管理
+    const datetimeRowsEl = document.getElementById('datetime-rows');
+
+    function createDatetimeRow(initialDate = '', initialTime = '', initialDuration = 1, initialEndTime = '') {
+      const row = document.createElement('div');
+      row.className = 'datetime-row';
+
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.className = 'row-date';
+      dateInput.value = initialDate || todayStr();
+
+      const timeSelect = document.createElement('select');
+      timeSelect.className = 'row-time';
+      timeSelect.innerHTML = getTimeOptionsHtml(initialTime);
+
+      const toSpan = document.createElement('span');
+      toSpan.textContent = '〜';
+
+      const endTimeSelect = document.createElement('select');
+      endTimeSelect.className = 'row-end-time';
+      endTimeSelect.innerHTML = getEndTimeOptionsHtml(initialEndTime);
+
+      const durLabel = document.createElement('label');
+      durLabel.style.fontSize = '.85rem';
+      durLabel.textContent = '所要時間: ';
+      const durInput = document.createElement('input');
+      durInput.type = 'number';
+      durInput.className = 'row-duration';
+      durInput.min = '1';
+      durInput.max = '24';
+      durInput.value = initialDuration || 1;
+      durInput.style.width = '4.5em';
+      durLabel.appendChild(durInput);
+      durLabel.appendChild(document.createTextNode(' 時間'));
+
+      bindTimeAndDuration(timeSelect, endTimeSelect, durInput);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'secondary small-btn';
+      removeBtn.textContent = '✕ 削除';
+      removeBtn.addEventListener('click', () => {
+        if (datetimeRowsEl.children.length <= 1) {
+          dateInput.value = todayStr();
+          timeSelect.value = '';
+          endTimeSelect.value = '';
+          durInput.value = '1';
+          return;
+        }
+        row.remove();
+      });
+
+      row.appendChild(dateInput);
+      row.appendChild(timeSelect);
+      row.appendChild(toSpan);
+      row.appendChild(endTimeSelect);
+      row.appendChild(durLabel);
+      row.appendChild(removeBtn);
+
+      return row;
+    }
+
+    function addDatetimeRow(initialDate = '') {
+      let nextDate = initialDate;
+      if (!nextDate) {
+        const lastRow = datetimeRowsEl.lastElementChild;
+        if (lastRow) {
+          const lastDateVal = lastRow.querySelector('.row-date')?.value;
+          if (lastDateVal) {
+            const d = new Date(lastDateVal + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            nextDate = dateStr(d);
+          }
+        }
+      }
+      const defaultDuration = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
+      const defaultTime = document.getElementById('repeat-time')?.value || '';
+      const defaultEndTime = document.getElementById('repeat-end-time')?.value || '';
+      const row = createDatetimeRow(nextDate, defaultTime, defaultDuration, defaultEndTime);
+      datetimeRowsEl.appendChild(row);
+    }
+
+    document.getElementById('add-datetime-row').addEventListener('click', () => addDatetimeRow());
+
+    // 一括追加処理
+    document.getElementById('bulk-add-btn').addEventListener('click', bulkAddEvents);
+
+    function bulkAddEvents() {
+      const titleInput = document.getElementById('new-title');
+      const title = titleInput.value.trim();
+      if (!title) {
+        alert('予定のタイトルを入力してください。');
+        titleInput.focus();
+        return;
+      }
+
+      const memo = document.getElementById('bulk-memo').value;
+      const status = document.getElementById('bulk-status').value;
+      const eventsToAdd = [];
+
+      if (activeScheduleTab === 'multiple') {
+        const rows = datetimeRowsEl.querySelectorAll('.datetime-row');
+        rows.forEach(row => {
+          const d = row.querySelector('.row-date')?.value;
+          if (!d) return;
+          const t = row.querySelector('.row-time')?.value || null;
+          const et = row.querySelector('.row-end-time')?.value || null;
+          const dur = parseInt(row.querySelector('.row-duration')?.value, 10) || 1;
+          eventsToAdd.push({
+            id: uid(),
+            title,
+            memo,
+            status,
+            date: d,
+            time: t,
+            endTime: (t && et) ? et : null,
+            isEndTimeUnset: !!(t && !et),
+            duration: dur,
+            createdAt: Date.now(),
+            remindedOn: null,
+          });
+        });
+
+        if (eventsToAdd.length === 0) {
+          alert('日時を少なくとも1つ指定してください。');
+          return;
+        }
+      } else {
+        const checkedDays = Array.from(document.querySelectorAll('input[name="repeat-day"]:checked'))
+          .map(cb => parseInt(cb.value, 10));
+        if (checkedDays.length === 0) {
+          alert('繰り返し対象の曜日を1つ以上選択してください。');
+          return;
+        }
+
+        const startStr = repeatStartInput.value;
+        const endStr = repeatEndInput.value;
+        if (!startStr || !endStr) {
+          alert('開始日と終了日を指定してください。');
+          return;
+        }
+
+        const startDate = new Date(startStr + 'T00:00:00');
+        const endDate = new Date(endStr + 'T00:00:00');
+        if (startDate > endDate) {
+          alert('開始日は終了日以前の日付を指定してください。');
+          return;
+        }
+
+        const t = document.getElementById('repeat-time')?.value || null;
+        const et = document.getElementById('repeat-end-time')?.value || null;
+        const dur = parseInt(document.getElementById('repeat-duration')?.value, 10) || 1;
+
+        const cur = new Date(startDate);
+        let count = 0;
+        const maxLimit = 150;
+        while (cur <= endDate && count < maxLimit) {
+          if (checkedDays.includes(cur.getDay())) {
+            eventsToAdd.push({
+              id: uid(),
+              title,
+              memo,
+              status,
+              date: dateStr(cur),
+              time: t,
+              endTime: (t && et) ? et : null,
+              isEndTimeUnset: !!(t && !et),
+              duration: dur,
+              createdAt: Date.now(),
+              remindedOn: null,
+            });
+            count++;
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        if (eventsToAdd.length === 0) {
+          alert('指定した期間内に該当する曜日の日付がありませんでした。');
+          return;
+        }
+      }
+
+      const allEvents = loadEvents();
+      eventsToAdd.forEach(ev => allEvents.push(ev));
+      saveEvents(allEvents);
+
+      if (eventsToAdd[0]?.date) {
+        const firstDate = new Date(eventsToAdd[0].date + 'T00:00:00');
+        viewDate = firstDate;
+      }
+
+      recordHistory(title, memo, eventsToAdd[0]?.duration || 1, eventsToAdd[0]?.time || '');
+      titleInput.value = '';
+      document.getElementById('bulk-memo').value = '';
+      if (historyDropdown) historyDropdown.hidden = true;
+      renderAll();
+      showFeedback(`${eventsToAdd.length}件の予定をカレンダーに追加しました 📅`);
+    }
+
+    // ============================================================
+    // 直近の登録履歴（History）
+    // ============================================================
+    const HISTORY_KEY = 'tentative_calendar_history';
+    const MAX_HISTORY = 8;
+    const historyDropdown = document.getElementById('history-dropdown');
+    const newTitleInput = document.getElementById('new-title');
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        let list = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list)) list = [];
+        if (list.length === 0) {
+          const events = loadEvents();
+          const seen = new Set();
+          events.slice().reverse().forEach(ev => {
+            if (ev.title && !seen.has(ev.title)) {
+              seen.add(ev.title);
+              list.push({
+                title: ev.title,
+                memo: ev.memo || '',
+                duration: ev.duration || 1,
+                time: ev.time || ''
+              });
+            }
+          });
+          list = list.slice(0, MAX_HISTORY);
+        }
+        return list;
+      } catch {
+        return [];
+      }
+    }
+
+    function recordHistory(title, memo = '', duration = 1, time = '') {
+      const cleanTitle = (title || '').trim();
+      if (!cleanTitle) return;
+      let list = loadHistory();
+      list = list.filter(item => item.title !== cleanTitle);
+      list.unshift({
+        title: cleanTitle,
+        memo: memo || '',
+        duration: duration || 1,
+        time: time || ''
+      });
+      list = list.slice(0, MAX_HISTORY);
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+      } catch {}
+    }
+
+    function renderHistoryDropdown(query = '') {
+      const allHistory = loadHistory();
+      const filtered = query.trim()
+        ? allHistory.filter(h => h.title.toLowerCase().includes(query.trim().toLowerCase()))
+        : allHistory;
+
+      historyDropdown.innerHTML = '';
+      if (filtered.length === 0) {
+        historyDropdown.hidden = true;
+        return;
+      }
+
+      const header = document.createElement('div');
+      header.className = 'history-header';
+      header.innerHTML = '<span>🕒 直近の登録履歴</span><span style="cursor:pointer; font-weight:normal;" title="履歴を閉じる">✕</span>';
+      header.querySelector('span:last-child').addEventListener('click', (e) => {
+        e.stopPropagation();
+        historyDropdown.hidden = true;
+      });
+      historyDropdown.appendChild(header);
+
+      filtered.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'history-item';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = item.title;
+        row.appendChild(titleSpan);
+
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'history-meta';
+        const metaInfo = [];
+        if (item.time) metaInfo.push(item.time);
+        if (item.duration) metaInfo.push(`${item.duration}時間`);
+        metaSpan.textContent = metaInfo.join(', ');
+        row.appendChild(metaSpan);
+
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyHistoryItem(item);
+          historyDropdown.hidden = true;
+        });
+
+        historyDropdown.appendChild(row);
+      });
+
+      historyDropdown.hidden = false;
+    }
+
+    function applyHistoryItem(item) {
+      newTitleInput.value = item.title;
+      newTitleInput.focus();
+
+      const memoInput = document.getElementById('bulk-memo');
+      if (memoInput && item.memo) {
+        memoInput.value = item.memo;
+      }
+      if (item.duration) {
+        const repeatDuration = document.getElementById('repeat-duration');
+        if (repeatDuration) repeatDuration.value = item.duration;
+        document.querySelectorAll('.row-duration').forEach(el => {
+          el.value = item.duration;
+        });
+      }
+      if (item.time) {
+        const repeatTime = document.getElementById('repeat-time');
+        if (repeatTime) repeatTime.value = item.time;
+        document.querySelectorAll('.row-time').forEach(el => {
+          el.value = item.time;
+        });
+      }
+      showFeedback(`履歴から「${item.title}」を反映しました ✨`);
+    }
+
+    newTitleInput.addEventListener('focus', () => {
+      renderHistoryDropdown(newTitleInput.value);
+    });
+
+    newTitleInput.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderHistoryDropdown(newTitleInput.value);
+    });
+
+    newTitleInput.addEventListener('input', () => {
+      renderHistoryDropdown(newTitleInput.value);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.input-history-wrapper')) {
+        historyDropdown.hidden = true;
+      }
+    });
+
+    newTitleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        historyDropdown.hidden = true;
+      }
+    });
+
+    // ============================================================
     // 予定の追加（常にトレイへ：日時はドラッグで割り当てる）
     // ============================================================
     document.getElementById('add-event').addEventListener('click', async () => {
@@ -890,24 +2016,397 @@
         remindedOn: null,
       });
       if (!await saveEvents(events)) return;
+      saveEvents(events);
+      recordHistory(title);
       input.value = '';
+      if (historyDropdown) historyDropdown.hidden = true;
       renderAll();
+      showFeedback(`「${title}」を未確定トレイに追加しました`);
     });
     document.getElementById('new-title').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('add-event').click();
+      if (e.key === 'Enter') {
+        if (historyDropdown) historyDropdown.hidden = true;
+        document.getElementById('add-event').click();
+      }
     });
 
     // ============================================================
-    // 予定の詳細パネル（人がステータスを確定する場所）
+    // 予定の詳細パネル（日時設定・ステータス確定・展開）
     // ============================================================
+    const detailDateInput = document.getElementById('detail-date');
+    const detailTimeSelect = document.getElementById('detail-time');
+    const detailEndTimeSelect = document.getElementById('detail-end-time');
+    const detailDurationInput = document.getElementById('detail-duration');
+    const detailDateBadge = document.getElementById('detail-date-badge');
+
+    const detailRepeatTimeSelect = document.getElementById('detail-repeat-time');
+    const detailRepeatEndTimeSelect = document.getElementById('detail-repeat-end-time');
+
+    function updateDetailDateBadge() {
+      const d = detailDateInput.value;
+      const t = detailTimeSelect.value;
+      const et = detailEndTimeSelect.value;
+      if (d) {
+        if (t) {
+          detailDateBadge.textContent = et ? `【配置中：${d} ${t}〜${et}】` : `【配置中：${d} ${t}〜未定】`;
+        } else {
+          detailDateBadge.textContent = `【配置中：${d} 終日】`;
+        }
+        detailDateBadge.style.color = 'var(--accent)';
+      } else {
+        detailDateBadge.textContent = '【配置中：未確定トレイ内（日時未定）】';
+        detailDateBadge.style.color = '#c0392b';
+      }
+    }
+
+    bindTimeAndDuration(detailTimeSelect, detailEndTimeSelect, detailDurationInput, updateDetailDateBadge);
+    bindTimeAndDuration(detailRepeatTimeSelect, detailRepeatEndTimeSelect, detailDurationInput);
+    detailDateInput.addEventListener('input', updateDetailDateBadge);
+
+    const toggleDetailScheduleBtn = document.getElementById('toggle-detail-schedule-btn');
+    const detailSchedulePanel = document.getElementById('detail-schedule-panel');
+    const toggleDetailIcon = document.getElementById('toggle-detail-icon');
+
+    toggleDetailScheduleBtn.addEventListener('click', () => {
+      const isHidden = detailSchedulePanel.hidden;
+      detailSchedulePanel.hidden = !isHidden;
+      toggleDetailIcon.textContent = isHidden ? '▼' : '▶';
+    });
+
+    let detailActiveScheduleTab = 'multiple';
+    const detailTabMultipleBtn = document.getElementById('detail-tab-multiple');
+    const detailTabRepeatBtn = document.getElementById('detail-tab-repeat');
+    const detailPanelMultiple = document.getElementById('detail-panel-multiple');
+    const detailPanelRepeat = document.getElementById('detail-panel-repeat');
+
+    detailTabMultipleBtn.addEventListener('click', () => {
+      detailActiveScheduleTab = 'multiple';
+      detailTabMultipleBtn.className = 'tab-btn active';
+      detailTabRepeatBtn.className = 'tab-btn';
+      detailPanelMultiple.hidden = false;
+      detailPanelRepeat.hidden = true;
+    });
+
+    detailTabRepeatBtn.addEventListener('click', () => {
+      detailActiveScheduleTab = 'repeat';
+      detailTabRepeatBtn.className = 'tab-btn active';
+      detailTabMultipleBtn.className = 'tab-btn';
+      detailPanelMultiple.hidden = true;
+      detailPanelRepeat.hidden = false;
+    });
+
+    // 詳細パネル用曜日ピルのクリック連動
+    document.querySelectorAll('#detail-schedule-panel .weekday-pill').forEach(pill => {
+      const checkbox = pill.querySelector('input[type="checkbox"]');
+      if (!checkbox) return;
+      pill.addEventListener('click', () => {
+        setTimeout(() => {
+          pill.classList.toggle('checked', checkbox.checked);
+        }, 0);
+      });
+    });
+
+    // 詳細パネル用期間プリセット
+    const detailRepeatStartInput = document.getElementById('detail-repeat-start');
+    const detailRepeatEndInput = document.getElementById('detail-repeat-end');
+
+    function setDetailRepeatPreset(days) {
+      const start = detailRepeatStartInput.value ? new Date(detailRepeatStartInput.value + 'T00:00:00') : new Date();
+      detailRepeatStartInput.value = dateStr(start);
+      const end = new Date(start);
+      end.setDate(end.getDate() + days);
+      detailRepeatEndInput.value = dateStr(end);
+    }
+
+    document.getElementById('detail-preset-2w').addEventListener('click', () => setDetailRepeatPreset(14));
+    document.getElementById('detail-preset-1m').addEventListener('click', () => setDetailRepeatPreset(30));
+    document.getElementById('detail-preset-3m').addEventListener('click', () => setDetailRepeatPreset(90));
+
+    // 詳細パネル用複数日時行管理
+    const detailDatetimeRowsEl = document.getElementById('detail-datetime-rows');
+
+    function createDetailDatetimeRow(initialDate = '', initialTime = '', initialDuration = 1, initialEndTime = '') {
+      const row = document.createElement('div');
+      row.className = 'datetime-row';
+
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.className = 'row-date';
+      dateInput.value = initialDate || todayStr();
+
+      const timeSelect = document.createElement('select');
+      timeSelect.className = 'row-time';
+      timeSelect.innerHTML = getTimeOptionsHtml(initialTime);
+
+      const toSpan = document.createElement('span');
+      toSpan.textContent = '〜';
+
+      const endTimeSelect = document.createElement('select');
+      endTimeSelect.className = 'row-end-time';
+      endTimeSelect.innerHTML = getEndTimeOptionsHtml(initialEndTime);
+
+      const durLabel = document.createElement('label');
+      durLabel.style.fontSize = '.85rem';
+      durLabel.textContent = '所要時間: ';
+      const durInput = document.createElement('input');
+      durInput.type = 'number';
+      durInput.className = 'row-duration';
+      durInput.min = '1';
+      durInput.max = '24';
+      durInput.value = initialDuration || 1;
+      durInput.style.width = '4.5em';
+      durLabel.appendChild(durInput);
+      durLabel.appendChild(document.createTextNode(' 時間'));
+
+      bindTimeAndDuration(timeSelect, endTimeSelect, durInput);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'secondary small-btn';
+      removeBtn.textContent = '✕ 削除';
+      removeBtn.addEventListener('click', () => {
+        if (detailDatetimeRowsEl.children.length <= 1) {
+          dateInput.value = todayStr();
+          timeSelect.value = '';
+          endTimeSelect.value = '';
+          durInput.value = '1';
+          return;
+        }
+        row.remove();
+      });
+
+      row.appendChild(dateInput);
+      row.appendChild(timeSelect);
+      row.appendChild(toSpan);
+      row.appendChild(endTimeSelect);
+      row.appendChild(durLabel);
+      row.appendChild(removeBtn);
+
+      return row;
+    }
+
+    function addDetailDatetimeRow(initialDate = '') {
+      let nextDate = initialDate;
+      if (!nextDate) {
+        const lastRow = detailDatetimeRowsEl.lastElementChild;
+        if (lastRow) {
+          const lastDateVal = lastRow.querySelector('.row-date')?.value;
+          if (lastDateVal) {
+            const d = new Date(lastDateVal + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            nextDate = dateStr(d);
+          }
+        }
+      }
+      const curDur = parseInt(detailDurationInput.value, 10) || 1;
+      const curTime = detailTimeSelect.value || '';
+      const curEndTime = detailEndTimeSelect.value || '';
+      const row = createDetailDatetimeRow(nextDate, curTime, curDur, curEndTime);
+      detailDatetimeRowsEl.appendChild(row);
+    }
+
+    document.getElementById('detail-add-datetime-row').addEventListener('click', () => addDetailDatetimeRow());
+
+    // 一括展開処理
+    document.getElementById('detail-bulk-expand-btn').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents();
+      const ev = events.find(e => e.id === selectedEventId);
+      if (!ev) return;
+
+      const title = document.getElementById('detail-title').value.trim() || ev.title;
+      const memo = document.getElementById('detail-memo').value;
+      const baseDuration = parseInt(detailDurationInput.value, 10) || ev.duration || 1;
+      const status = pendingStatus || ev.status || 'TENTATIVE';
+
+      const scheduleItems = [];
+
+      if (detailActiveScheduleTab === 'multiple') {
+        const rows = detailDatetimeRowsEl.querySelectorAll('.datetime-row');
+        rows.forEach(row => {
+          const d = row.querySelector('.row-date')?.value;
+          if (!d) return;
+          const t = row.querySelector('.row-time')?.value || null;
+          const et = row.querySelector('.row-end-time')?.value || null;
+          const dur = parseInt(row.querySelector('.row-duration')?.value, 10) || baseDuration;
+          scheduleItems.push({
+            date: d,
+            time: t,
+            endTime: (t && et) ? et : null,
+            isEndTimeUnset: !!(t && !et),
+            duration: dur
+          });
+        });
+        if (scheduleItems.length === 0) {
+          alert('日時を少なくとも1つ指定してください。');
+          return;
+        }
+      } else {
+        const checkedDays = Array.from(document.querySelectorAll('#detail-schedule-panel input[name="detail-repeat-day"]:checked'))
+          .map(cb => parseInt(cb.value, 10));
+        if (checkedDays.length === 0) {
+          alert('繰り返し対象の曜日を1つ以上選択してください。');
+          return;
+        }
+        const startStr = detailRepeatStartInput.value;
+        const endStr = detailRepeatEndInput.value;
+        if (!startStr || !endStr) {
+          alert('開始日と終了日を指定してください。');
+          return;
+        }
+        const startDate = new Date(startStr + 'T00:00:00');
+        const endDate = new Date(endStr + 'T00:00:00');
+        if (startDate > endDate) {
+          alert('開始日は終了日以前の日付を指定してください。');
+          return;
+        }
+        const t = detailRepeatTimeSelect.value || null;
+        const et = detailRepeatEndTimeSelect.value || null;
+        const cur = new Date(startDate);
+        let count = 0;
+        const maxLimit = 150;
+        while (cur <= endDate && count < maxLimit) {
+          if (checkedDays.includes(cur.getDay())) {
+            scheduleItems.push({
+              date: dateStr(cur),
+              time: t,
+              endTime: (t && et) ? et : null,
+              isEndTimeUnset: !!(t && !et),
+              duration: baseDuration
+            });
+            count++;
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+        if (scheduleItems.length === 0) {
+          alert('指定した期間内に該当する曜日の日付がありませんでした。');
+          return;
+        }
+      }
+
+      // 1件目で現在の予定を更新
+      const first = scheduleItems[0];
+      ev.title = title;
+      ev.memo = memo;
+      ev.status = status;
+      ev.date = first.date;
+      ev.time = first.time;
+      ev.endTime = first.endTime;
+      ev.isEndTimeUnset = first.isEndTimeUnset;
+      ev.duration = first.duration;
+
+      // 2件目以降は新規複製
+      for (let i = 1; i < scheduleItems.length; i++) {
+        const item = scheduleItems[i];
+        events.push({
+          id: uid(),
+          title,
+          memo,
+          status,
+          date: item.date,
+          time: item.time,
+          endTime: item.endTime,
+          isEndTimeUnset: item.isEndTimeUnset,
+          duration: item.duration,
+          createdAt: Date.now(),
+          remindedOn: null,
+        });
+      }
+
+      saveEvents(events);
+      recordHistory(title, memo, baseDuration, first.time || '');
+      viewDate = new Date(first.date + 'T00:00:00');
+      closeDetail();
+      renderAll();
+      showFeedback(`「${title}」を${scheduleItems.length}件の日程に一括展開しました 📅`);
+    });
+
+    // 「📝 入力欄に読み込む」ボタン
+    document.getElementById('detail-load-to-input').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents();
+      const ev = events.find(e => e.id === selectedEventId);
+      if (!ev) return;
+
+      const title = document.getElementById('detail-title').value.trim() || ev.title;
+      const memo = document.getElementById('detail-memo').value;
+      const duration = parseInt(detailDurationInput.value, 10) || ev.duration || 1;
+      const time = detailTimeSelect.value || ev.time || '';
+      const endTime = detailEndTimeSelect.value || ev.endTime || '';
+
+      const titleInput = document.getElementById('new-title');
+      titleInput.value = title;
+      const bulkMemo = document.getElementById('bulk-memo');
+      if (bulkMemo) bulkMemo.value = memo;
+
+      const repeatDuration = document.getElementById('repeat-duration');
+      if (repeatDuration) repeatDuration.value = duration;
+      document.querySelectorAll('#datetime-rows .row-duration').forEach(el => el.value = duration);
+
+      const repeatTime = document.getElementById('repeat-time');
+      if (repeatTime) repeatTime.value = time;
+      document.querySelectorAll('#datetime-rows .row-time').forEach(el => el.value = time);
+
+      const repeatEndTime = document.getElementById('repeat-end-time');
+      if (repeatEndTime) repeatEndTime.value = endTime;
+      document.querySelectorAll('#datetime-rows .row-end-time').forEach(el => el.value = endTime);
+
+      // 上部の日時設定パネルを展開
+      const scheduleOptionsPanel = document.getElementById('schedule-options-panel');
+      if (scheduleOptionsPanel) {
+        scheduleOptionsPanel.hidden = false;
+        const toggleIcon = document.getElementById('toggle-icon');
+        if (toggleIcon) toggleIcon.textContent = '▼';
+      }
+
+      closeDetail();
+      const inputSection = document.getElementById('input-section');
+      if (inputSection) inputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      titleInput.focus();
+      showFeedback(`「${title}」を入力欄に読み込みました 📝`);
+    });
+
     function openDetail(id) {
       selectedEventId = id;
       pendingStatus = null;
       const ev = loadEvents().find(e => e.id === id);
       if (!ev) return;
+
       document.getElementById('detail-title').value = ev.title;
       document.getElementById('detail-memo').value = ev.memo || '';
-      document.getElementById('detail-duration').value = ev.duration || 1;
+      detailDurationInput.value = ev.duration || 1;
+
+      // 日時設定の反映
+      detailDateInput.value = ev.date || '';
+      detailTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
+      detailEndTimeSelect.innerHTML = getEndTimeOptionsHtml(ev.endTime || '');
+      detailRepeatTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
+      detailRepeatEndTimeSelect.innerHTML = getEndTimeOptionsHtml(ev.endTime || '');
+
+      // バッジ表示
+      updateDetailDateBadge();
+
+      // 展開用複数日時行の初期化
+      detailDatetimeRowsEl.innerHTML = '';
+      const initialDate = ev.date || todayStr();
+      detailDatetimeRowsEl.appendChild(createDetailDatetimeRow(initialDate, ev.time || '', ev.duration || 1, ev.endTime || ''));
+
+      // 展開用毎週繰り返しの初期化
+      detailRepeatStartInput.value = initialDate;
+      setDetailRepeatPreset(30);
+      const evDateObj = new Date(initialDate + 'T00:00:00');
+      const dayOfWeek = evDateObj.getDay();
+      document.querySelectorAll('#detail-schedule-panel .weekday-pill').forEach(pill => {
+        const cb = pill.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        const shouldCheck = parseInt(cb.value, 10) === dayOfWeek;
+        cb.checked = shouldCheck;
+        pill.classList.toggle('checked', shouldCheck);
+      });
+
+      detailSchedulePanel.hidden = true;
+      toggleDetailIcon.textContent = '▶';
+
       highlightStatus(ev.status);
       detailSection.hidden = false;
       detailSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -934,13 +2433,31 @@
       if (!ev) return;
       ev.title = document.getElementById('detail-title').value.trim() || ev.title;
       ev.memo = document.getElementById('detail-memo').value;
-      const durationInput = parseInt(document.getElementById('detail-duration').value, 10);
+      const durationInput = parseInt(detailDurationInput.value, 10);
       ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
+
+      // 日時設定の保存
+      const dateVal = detailDateInput.value;
+      const timeVal = detailTimeSelect.value;
+      const endTimeVal = detailEndTimeSelect.value;
+      ev.date = dateVal || null;
+      ev.time = (dateVal && timeVal) ? timeVal : null;
+      ev.endTime = (dateVal && timeVal && endTimeVal) ? endTimeVal : null;
+      ev.isEndTimeUnset = !!(dateVal && timeVal && !endTimeVal);
+
       if (pendingStatus) ev.status = pendingStatus;
       if (!await saveEvents(events)) return;
       pendingStatus = null;
+      saveEvents(events);
+      recordHistory(ev.title, ev.memo, ev.duration, ev.time || '');
+
+      if (ev.date) {
+        viewDate = new Date(ev.date + 'T00:00:00');
+      }
+
       closeDetail();
       renderAll();
+      showFeedback(ev.date ? `「${ev.title}」の日時を保存しました 📅` : `「${ev.title}」を保存しました（トレイ内）`);
     });
 
     document.getElementById('detail-clear-date').addEventListener('click', async () => {
@@ -951,8 +2468,12 @@
       ev.date = null;
       ev.time = null;
       if (!await saveEvents(events)) return;
+      ev.endTime = null;
+      ev.isEndTimeUnset = false;
+      saveEvents(events);
       closeDetail();
       renderAll();
+      showFeedback(`「${ev.title}」の日時をクリアし、トレイに戻しました`);
     });
 
     document.getElementById('detail-delete').addEventListener('click', async () => {
@@ -970,6 +2491,39 @@
       pendingStatus = null;
       detailSection.hidden = true;
     }
+
+    // ============================================================
+    // 詳細パネルからのお気に入り追加
+    // ============================================================
+    document.getElementById('detail-favorite').addEventListener('click', () => {
+      if (!selectedEventId) return;
+      const events = loadEvents();
+      const ev = events.find(e => e.id === selectedEventId);
+      if (!ev) return;
+      const title = document.getElementById('detail-title').value.trim() || ev.title;
+      const memo = document.getElementById('detail-memo').value;
+      const duration = parseInt(document.getElementById('detail-duration').value, 10) || ev.duration || 1;
+      const time = ev.time || '';
+
+      const favs = loadFavorites();
+      const existing = favs.find(f => f.title === title);
+      if (existing) {
+        existing.memo = memo;
+        existing.duration = duration;
+        existing.time = time;
+      } else {
+        favs.push({
+          id: 'fav_' + Date.now().toString(36),
+          title,
+          duration,
+          memo,
+          time
+        });
+      }
+      saveFavorites(favs);
+      renderFavorites();
+      showFeedback(`「${title}」をお気に入りに保存しました ⭐`);
+    });
 
     // ============================================================
     // ローカル通知（未確定のまま指定日数経過した予定を知らせる）
@@ -1045,6 +2599,28 @@
       }
     }
 
+    // ============================================================
+    // 初期化
+    // ============================================================
+    const repeatTimeEl = document.getElementById('repeat-time');
+    if (repeatTimeEl) repeatTimeEl.innerHTML = getTimeOptionsHtml();
+
+    const repeatEndTimeEl = document.getElementById('repeat-end-time');
+    if (repeatEndTimeEl) repeatEndTimeEl.innerHTML = getEndTimeOptionsHtml();
+
+    const repeatDurationEl = document.getElementById('repeat-duration');
+    bindTimeAndDuration(repeatTimeEl, repeatEndTimeEl, repeatDurationEl);
+
+    if (repeatStartInput && repeatEndInput) {
+      repeatStartInput.value = todayStr();
+      setRepeatPeriodPreset(30);
+    }
+
+    if (datetimeRowsEl && datetimeRowsEl.children.length === 0) {
+      addDatetimeRow(todayStr());
+    }
+
+    renderFavorites();
     updateNotifyBtn();
     initializeApp();
     window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
