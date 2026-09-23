@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新規登録 | 助じゅ～る</title>
+  <link rel="stylesheet" href="/static/login/auth.css">
+</head>
+<body>
+<main>
+  <h1>助じゅ～る</h1>
+  <p class="lead">自分の予定を、決まったところから。</p>
+  <section>
+    <nav aria-label="アカウント">
+      <a href="/login/">ログイン</a>
+      <a href="/signup/" aria-current="page">新規登録</a>
+    </nav>
+    <h2>アカウントを作成</h2>
+    <form id="auth-form" data-mode="signup" data-success-url="/">
+      <div id="auth-error" class="errorlist" role="alert" aria-live="assertive"></div>
+      <div id="auth-info" class="successlist" role="status" aria-live="polite"></div>
+      <label for="id_email">メールアドレス</label>
+      <input id="id_email" name="email" type="email" maxlength="254" required autocomplete="email" autocapitalize="none" spellcheck="false">
+      <label for="id_username">ユーザー名</label>
+      <input id="id_username" name="username" type="text" maxlength="32" required autocomplete="username" aria-describedby="username-hint">
+      <p class="hint" id="username-hint">画面に表示する名前を1〜32文字で入力してください。</p>
+      <label for="id_password1">パスワード</label>
+      <input id="id_password1" name="password1" type="password" minlength="6" required autocomplete="new-password" aria-describedby="password-hint">
+      <p class="hint" id="password-hint">6文字以上で入力してください。</p>
+      <label for="id_password2">パスワード（確認）</label>
+      <input id="id_password2" name="password2" type="password" minlength="6" required autocomplete="new-password">
+      <button type="submit">新規登録</button>
+      <p class="hint">登録後に確認メールを送信します。メール内のリンクを開いてからログインしてください。</p>
+    </form>
+  </section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script src="/static/firebase-config.js"></script>
+<script src="/static/firebase-app.js"></script>
+<script src="/static/login/firebase-auth.js"></script>
+<script src="/static/firebase-events.js"></script>
+<script src="/static/login/api.js"></script>
+<script src="/static/login/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
+
+    function isValidDate(value) {
+      return value == null
+        || (value is string
+          && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+    }
+
+    function isValidTime(value) {
+      return value == null
+        || (value is string
+          && value.matches('^([01][0-9]|2[0-3]):00$'));
+    }
+
+    function hasSameLegacyId(before, after) {
+      return (!('legacyId' in before) && !('legacyId' in after))
+        || ('legacyId' in before
+          && 'legacyId' in after
+          && before.legacyId == after.legacyId);
+    }
+
+    function hasValidEventFields(data) {
+      return data.keys().hasAll([
+          'title', 'memo', 'status', 'date', 'time', 'duration',
+          'remindedOn', 'version', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'title', 'memo', 'status', 'date', 'time', 'duration',
+          'remindedOn', 'version', 'createdAt', 'legacyId'
+        ])
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 200
+        && data.memo is string
+        && data.memo.size() <= 10000
+        && data.status is string
+        && data.status in ['TENTATIVE', 'CONFIRMED', 'COMPLETED']
+        && isValidDate(data.date)
+        && isValidTime(data.time)
+        && (data.date != null || data.time == null)
+        && data.duration is int
+        && data.duration >= 1
+        && data.duration <= 24
+        && isValidDate(data.remindedOn)
+        && data.version is int
+        && data.createdAt is timestamp
+        && (!('legacyId' in data)
+          || (data.legacyId is string
+            && data.legacyId.size() >= 1
+            && data.legacyId.size() <= 100));
+    }
+
+    match /users/{userId}/events/{eventId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && hasValidEventFields(request.resource.data)
+        && request.resource.data.version == 1;
+
+      allow update: if isOwner(userId)
+        && hasValidEventFields(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && hasSameLegacyId(resource.data, request.resource.data)
+        && request.resource.data.version == resource.data.version + 1;
+
+      allow delete: if isOwner(userId);
+    }
+  }
+}

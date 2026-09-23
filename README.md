@@ -12,9 +12,12 @@
 ## 使った技術
 
 - HTML / CSS / JavaScript（素のまま）
-- データの保存: localStorage
+- Firebase Authentication
+- Cloud Firestore
+- Firebase App Check
+- GitHub Pages
 
-（**9/4 時点の構成です。** 開発期間で変えたら、ここも書き換えてください）
+予定はログインしたユーザーごとにCloud Firestoreへ保存します。
 
 ## どう開発したか
 
@@ -32,7 +35,13 @@
 
 ## 動かし方
 
-`index.html` をブラウザで開いてください。ビルドやインストールは不要です。
+Python 3がある環境で、次のコマンドを実行します。追加ライブラリのインストールは不要です。
+
+```bash
+python3 scripts/run_local.py
+```
+
+Windowsでは `py scripts\run_local.py` を実行します。起動後、ブラウザで `http://127.0.0.1:8080/login.html` を開きます。
 
 ## AI に任せなかった部分
 
@@ -43,3 +52,7 @@
 | 名前 | 大学 |
 | --- | --- |
 |  |  |
+
+## Firebase・GitHub Pages版
+
+現在のFirebase Authentication・Cloud Firestore構成と、GitHub Pages用ファイルの生成方法は、[Firebase・GitHub Pages版の説明](docs/FIREBASE_SETUP.md)を参照してください。

@@ -459,9 +459,11 @@
 </head>
 
 <body>
-  <header>
+    <header>
     <nav>
       <h5 class="max">助じゅ～る</h5>
+      <span id="current-user" class="small-text" style="margin-right: 8px;"></span>
+      <button id="logout-btn" type="button" class="border small">ログアウト</button>
       <h6 id="current-label"></h6>
       <div>
         <button class="border transparent">
@@ -496,6 +498,20 @@
       </button>
     </nav>
   </header>
+  <div class="row" style="padding: 4px 16px; gap: 8px; align-items: center; border-bottom: 1px solid var(--outline-variant, #e0e0e0); font-size: 0.85rem;">
+    <p id="sync-message" role="status" aria-live="polite" style="margin: 0; flex: 1;">予定を読み込んでいます…</p>
+    <button id="reload-events" type="button" class="border small">予定を再読み込み</button>
+    <details id="import-panel" style="position: relative;">
+      <summary style="cursor: pointer;">以前の予定を取り込む</summary>
+      <div style="position: absolute; right: 0; top: 100%; background: var(--surface, #fff); border: 1px solid var(--outline, #ccc); padding: 12px; border-radius: 8px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px;">
+        <p style="margin: 0 0 8px 0; font-size: 0.8rem;">以前のブラウザで書き出したJSONを選んでください。このアカウントに追加します。</p>
+        <input type="file" id="import-file" accept="application/json" style="width: 100%; font-size: 0.8rem;">
+        <div id="import-preview" style="font-size: 0.8rem; margin: 4px 0;"></div>
+        <button id="import-submit" type="button" class="primary small" disabled>このアカウントに取り込む</button>
+      </div>
+    </details>
+  </div>
+  <div id="calendar-content" hidden>
   <main class="responsive">
     <div class="grid">
       <section id="calendar-section" class="s12">
@@ -607,6 +623,7 @@
       </section>
 
   </main>
+  </div>
   <button class="l m round large add-button" data-ui="#add-event-dialog">
     <i>add</i>
     <span>予定の追加</span>
@@ -754,9 +771,21 @@
   <script src="js/material-dynamic-colors.min.js"></script>
   <script src="js/beer.min.js"></script>
 
+  <script src="static/legacy-export.js"></script>
+  <script src="static/app-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="static/firebase-config.js"></script>
+  <script src="static/firebase-app.js"></script>
+  <script src="static/login/firebase-auth.js"></script>
+  <script src="static/firebase-events.js"></script>
+  <script src="static/login/api.js"></script>
+  <script src="static/calendar-store.js"></script>
   <script>
-    // ============================================================
-    // アプリのテーマ管理（ライト / ダーク / 自動）
+    if (window.location.protocol !== 'file:') {
+// アプリのテーマ管理（ライト / ダーク / 自動）
     // ============================================================
     const THEME_KEY = 'taschedule_theme';
 
@@ -829,13 +858,29 @@
     }
 
     // ============================================================
-    // データの保存と読み込み（localStorage）
-    // ============================================================
-    const STORAGE_KEY = 'tentative_calendar_events';
-    const FAVORITES_KEY = 'tentative_calendar_favorites';
-    const REMINDER_DAYS = 3; // 仕様書に具体的な日数指定がないため仮の既定値
-    const HOUR_H = 64; // タイムラインの1時間あたりの高さ(px)。CSSの .hour-row の height と合わせる
 
+    // ============================================================
+    // データの保存と読み込み（Firebase Authentication / Firestore）
+    // ============================================================
+    const REMINDER_DAYS = 3;
+    const HOUR_H = 64; // タイムラインの1時間あたりの高さ(px)。CSSの .hour-row の height と合わせる
+    const syncMessage = document.getElementById('sync-message');
+    const calendarContent = document.getElementById('calendar-content');
+    const reloadButton = document.getElementById('reload-events');
+    const currentUser = document.getElementById('current-user');
+    const logoutButton = document.getElementById('logout-btn');
+    const loginUrl = window.APP_CONFIG?.loginUrl || '/login/';
+    let loading = false;
+
+    async function apiRequest(url, method = 'GET', data) {
+      return LoginApi.request(url, { method, data });
+    }
+
+    window.addEventListener('auth-required', () => {
+      window.location.assign(loginUrl);
+    });
+
+    const FAVORITES_KEY = 'tentative_calendar_favorites';
     const DEFAULT_FAVORITES = [
       { id: 'fav_1', title: 'ゼミ・研究会', duration: 2, memo: '', time: '13:00' },
       { id: 'fav_2', title: 'アルバイト', duration: 4, memo: '', time: '17:00' },
@@ -843,17 +888,114 @@
       { id: 'fav_4', title: '定例ミーティング', duration: 1, memo: '', time: '10:00' }
     ];
 
-    function loadEvents() {
-      try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        return Array.isArray(data) ? data : [];
-      } catch {
-        return [];
-      }
+    if (logoutButton) {
+      logoutButton.addEventListener('click', async () => {
+        if (store.busy || loading) return;
+        logoutButton.disabled = true;
+        setSync('ログアウトしています…');
+        try {
+          await LoginApi.request('/api/auth/logout/', { method: 'POST' });
+          window.location.assign(loginUrl);
+        } catch (error) {
+          if (error.status !== 401) {
+            setSync(error.message, true);
+            logoutButton.disabled = false;
+          }
+        }
+      });
     }
 
-    function saveEvents(events) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    const store = new CalendarStore(apiRequest);
+    function loadEvents() { return store.load(); }
+    function setSync(message, error = false) {
+      if (!syncMessage) return;
+      syncMessage.textContent = message;
+      syncMessage.style.color = error ? '#a32626' : 'inherit';
+    }
+    function lockCalendar(locked) {
+      if (calendarContent) {
+        calendarContent.inert = locked;
+        calendarContent.setAttribute('aria-busy', String(locked));
+      }
+      if (reloadButton) reloadButton.disabled = locked;
+      const ip = document.getElementById('import-panel');
+      if (ip) ip.inert = locked;
+    }
+    async function saveEvents(events) {
+      if (store.busy || loading || !store.ready) return false;
+      lockCalendar(true);
+      setSync('保存しています…');
+      try {
+        await store.save(events);
+        setSync('同期完了');
+        return true;
+      } catch (error) {
+        setSync(error.message, true);
+        return false;
+      } finally {
+        lockCalendar(false);
+      }
+    }
+    async function refreshEvents() {
+      if (loading) return;
+      loading = true;
+      lockCalendar(true);
+      setSync('予定を読み込んでいます…');
+      try {
+        await store.refresh();
+        renderAll();
+        setSync('同期完了');
+      } catch (error) {
+        setSync(error.message, true);
+      } finally {
+        loading = false;
+        lockCalendar(false);
+      }
+    }
+    if (reloadButton) {
+      reloadButton.addEventListener('click', () => refreshEvents().then(checkReminders));
+    }
+
+    let importRecords = null;
+    const importFile = document.getElementById('import-file');
+    const importPreview = document.getElementById('import-preview');
+    const importSubmit = document.getElementById('import-submit');
+    if (importFile && importSubmit && importPreview) {
+      importFile.addEventListener('change', async () => {
+        importRecords = null;
+        importSubmit.disabled = true;
+        const file = importFile.files[0];
+        if (!file) { importPreview.textContent = ''; return; }
+        try {
+          if (file.size > 1024 * 1024) throw new Error('1MB以内のJSONファイルを選んでください。');
+          const records = JSON.parse(await file.text());
+          if (!Array.isArray(records) || records.length > 1000) throw new Error('予定の配列（1000件以内）を選んでください。');
+          importRecords = records;
+          importPreview.textContent = `${records.length}件の予定を追加します。同じIDの取り込み済み予定はスキップします。`;
+          importSubmit.disabled = !records.length;
+        } catch (error) { importPreview.textContent = error.message; }
+      });
+      importSubmit.addEventListener('click', async () => {
+        if (!importRecords || store.busy || loading) return;
+        loading = true;
+        lockCalendar(true);
+        setSync('予定を取り込んでいます…');
+        try {
+          const result = await apiRequest('/api/events/import/', 'POST', { events: importRecords });
+          await store.refresh();
+          renderAll();
+          if (calendarContent) calendarContent.hidden = false;
+          setSync(`${result.imported}件を取り込みました。${result.skipped}件は取り込み済みです。`);
+          importRecords = null;
+          importSubmit.disabled = true;
+          importFile.value = '';
+        } catch (error) {
+          setSync(error.message, true);
+        } finally {
+          loading = false;
+          lockCalendar(false);
+        }
+      });
     }
 
     function loadFavorites() {
@@ -1001,8 +1143,7 @@
       });
     }
 
-    // ============================================================
-    // 状態
+// 状態
     // ============================================================
     let view = 'month';       // 'month' | 'timeline'
     let viewDate = new Date(); // 月表示: この月を表示 / タイムライン: この日を表示
@@ -1091,13 +1232,13 @@
       untimed.forEach(ev => trayEl.appendChild(createEventChip(ev)));
     }
 
-    addDropHandlers(trayEl, (id) => {
+    addDropHandlers(trayEl, async (id) => {
       const events = loadEvents();
       const ev = events.find(e => e.id === id);
       if (!ev) return;
       ev.date = null;
       ev.time = null;
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       renderAll();
     });
 
@@ -1146,12 +1287,12 @@
           setView('timeline');
         });
 
-        addDropHandlers(cell, (id) => {
+        addDropHandlers(cell, async (id) => {
           const evs = loadEvents();
           const ev = evs.find(e => e.id === id);
           if (!ev) return;
           ev.date = cellStr; // 月表示では時刻は付けない
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -1179,13 +1320,13 @@
         timelineAlldayEl.appendChild(hint);
       }
       untimed.forEach(ev => timelineAlldayEl.appendChild(createEventChip(ev)));
-      addDropHandlers(timelineAlldayEl, (id) => {
+      addDropHandlers(timelineAlldayEl, async (id) => {
         const evs = loadEvents();
         const ev = evs.find(e => e.id === id);
         if (!ev) return;
         ev.date = dayStr;
         ev.time = null;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
       });
 
@@ -1204,9 +1345,9 @@
         slot.className = 'hour-events';
         row.appendChild(slot);
 
-        addDropHandlers(row, (id, e) => {
+        addDropHandlers(row, async (id, e) => {
           const evs = loadEvents();
-          const ev = evs.find(e => e.id === id);
+          const ev = evs.find(e2 => e2.id === id);
           if (!ev) return;
           ev.date = dayStr;
           let m = 0;
@@ -1216,7 +1357,7 @@
             m = q * 15;
           }
           ev.time = `${pad2(h)}:${pad2(m)}`;
-          saveEvents(evs);
+          if (!await saveEvents(evs)) return;
           renderAll();
         });
 
@@ -1249,20 +1390,16 @@
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
       });
-      overlay.addEventListener('drop', (e) => {
+      overlay.addEventListener('drop', async (e) => {
         e.preventDefault();
+        overlay.classList.remove('drag-over');
         const id = e.dataTransfer.getData('text/plain');
-        if (!id) return;
-        const y = e.clientY - timelineHoursEl.getBoundingClientRect().top;
-        const totalQuarters = Math.min(24 * 4 - 1, Math.max(0, Math.floor(y / (HOUR_H / 4))));
-        const hour = Math.floor(totalQuarters / 4);
-        const minute = (totalQuarters % 4) * 15;
         const evs = loadEvents();
         const ev = evs.find(e2 => e2.id === id);
         if (!ev) return;
         ev.date = dayStr;
         ev.time = `${pad2(hour)}:${pad2(minute)}`;
-        saveEvents(evs);
+        if (!await saveEvents(evs)) return;
         renderAll();
         if (wasDialogOpenOnDrag) {
           wasDialogOpenOnDrag = false;
@@ -1332,49 +1469,49 @@
 
     // 予定ブロックの上端をドラッグして開始時刻および所要時間（時間単位）を変更する
     function startResizeTop(e, id, chipEl) {
-      e.preventDefault();
       e.stopPropagation();
       const events = loadEvents();
-      const ev = events.find(x => x.id === id);
+      const ev = events.find(item => item.id === id);
       if (!ev || !ev.time) return;
 
-      const startY = e.clientY;
-      const initDuration = ev.duration || 1;
       const initStartHours = timeToHours(ev.time);
-      const endHours = initStartHours + initDuration;
-      const minStartHours = 0;
-      const maxStartHours = Math.max(0, endHours - 0.25);
+      const initDuration = ev.duration || 1;
+      const fixedEndHours = initStartHours + initDuration;
       let finalStartHours = initStartHours;
       let finalDuration = initDuration;
       let finalTimeStr = ev.time;
 
       const timeBadge = chipEl.querySelector('.event-time-badge');
+      const startClientY = e.clientY;
 
       function onMove(moveEvent) {
-        const deltaQuarters = Math.round((moveEvent.clientY - startY) / (HOUR_H / 4));
-        const rawStartHours = initStartHours + deltaQuarters * 0.25;
-        finalStartHours = Math.max(minStartHours, Math.min(maxStartHours, Math.round(rawStartHours * 4) / 4));
-        finalDuration = Math.round((endHours - finalStartHours) * 4) / 4;
-        finalTimeStr = hoursToTime(finalStartHours);
+        const deltaPx = moveEvent.clientY - startClientY;
+        const deltaQuarters = Math.round(deltaPx / (HOUR_H / 4));
+        const newStartQuarters = Math.round(initStartHours * 4) + deltaQuarters;
+        const maxStartQuarters = Math.round(fixedEndHours * 4) - 1; // 最小0.25h
+        const clampedQuarters = Math.min(maxStartQuarters, Math.max(0, newStartQuarters));
 
-        chipEl.style.top = (finalStartHours * HOUR_H) + 'px';
-        chipEl.style.height = Math.max(14, (finalDuration * HOUR_H - 2)) + 'px';
-        if (finalDuration <= 0.25) {
-          chipEl.classList.add('short-event');
-        } else {
-          chipEl.classList.remove('short-event');
-        }
+        finalStartHours = clampedQuarters / 4;
+        finalDuration = fixedEndHours - finalStartHours;
+
+        const h = Math.floor(finalStartHours);
+        const m = (finalStartHours % 1) * 60;
+        finalTimeStr = `${pad2(h)}:${pad2(Math.round(m))}`;
+
+        chipEl.style.top = `${finalStartHours * HOUR_H}px`;
+        chipEl.style.height = `${finalDuration * HOUR_H - 2}px`;
         if (timeBadge) {
           timeBadge.textContent = `${finalTimeStr} - ${calcEndTime(finalTimeStr, finalDuration)}`;
         }
       }
-      function onUp() {
+
+      async function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         if (finalStartHours !== initStartHours || finalDuration !== initDuration) {
           ev.time = finalTimeStr;
           ev.duration = finalDuration;
-          saveEvents(events);
+          if (!await saveEvents(events)) return;
         }
         renderAll();
       }
@@ -1384,40 +1521,33 @@
 
     // 予定ブロックの下端をドラッグして所要時間（時間単位）を変更する
     function startResize(e, id, chipEl) {
-      e.preventDefault();
       e.stopPropagation();
       const events = loadEvents();
-      const ev = events.find(x => x.id === id);
-      if (!ev || !ev.time) return;
+      const ev = events.find(item => item.id === id);
+      if (!ev) return;
 
-      const startY = e.clientY;
       const startDuration = ev.duration || 1;
-      const startHours = timeToHours(ev.time);
-      const maxDuration = Math.max(0.25, 24 - startHours);
+      const startClientY = e.clientY;
       let finalDuration = startDuration;
-
       const timeBadge = chipEl.querySelector('.event-time-badge');
 
       function onMove(moveEvent) {
-        const deltaQuarters = Math.round((moveEvent.clientY - startY) / (HOUR_H / 4));
-        const rawDuration = startDuration + deltaQuarters * 0.25;
-        finalDuration = Math.min(maxDuration, Math.max(0.25, Math.round(rawDuration * 4) / 4));
-        chipEl.style.height = Math.max(14, (finalDuration * HOUR_H - 2)) + 'px';
-        if (finalDuration <= 0.25) {
-          chipEl.classList.add('short-event');
-        } else {
-          chipEl.classList.remove('short-event');
-        }
+        const deltaPx = moveEvent.clientY - startClientY;
+        const deltaQuarters = Math.round(deltaPx / (HOUR_H / 4));
+        const newQuarters = Math.round(startDuration * 4) + deltaQuarters;
+        finalDuration = Math.min(24 * 4, Math.max(1, newQuarters)) / 4;
+        chipEl.style.height = `${finalDuration * HOUR_H - 2}px`;
         if (timeBadge) {
           timeBadge.textContent = `${ev.time} - ${calcEndTime(ev.time, finalDuration)}`;
         }
       }
-      function onUp() {
+
+      async function onUp() {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         if (finalDuration !== startDuration) {
           ev.duration = finalDuration;
-          saveEvents(events);
+          if (!await saveEvents(events)) return;
         }
         renderAll();
       }
@@ -1670,8 +1800,8 @@
     // ============================================================
     // 予定の追加（常にトレイへ：日時はドラッグで割り当てる）
     // ============================================================
-    document.getElementById('add-event').addEventListener('click', () => {
-      const input = document.getElementById('new-title');
+    document.getElementById('add-event').addEventListener('click', async () => {
+      const input = document.getElementById('new-event-title');
       const title = input.value.trim();
       if (!title) return;
       const events = loadEvents();
@@ -1686,7 +1816,7 @@
         createdAt: Date.now(),
         remindedOn: null,
       });
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       recordHistory(title);
       input.value = '';
       if (historyDropdown) historyDropdown.hidden = true;
@@ -1819,7 +1949,7 @@
     document.getElementById('detail-add-datetime-row').addEventListener('click', () => addDetailDatetimeRow());
 
     // 一括展開処理
-    document.getElementById('detail-bulk-expand-btn').addEventListener('click', () => {
+    document.getElementById('detail-bulk-expand-btn').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
@@ -1827,31 +1957,31 @@
 
       const title = document.getElementById('detail-title').value.trim() || ev.title;
       const memo = document.getElementById('detail-memo').value;
-      const baseDuration = ev.duration || 1;
       const status = pendingStatus || ev.status || 'TENTATIVE';
+      const baseDuration = parseInt(detailDurationInput.value, 10) || ev.duration || 1;
 
+      const isMultiple = document.getElementById('multiple-datetime-tab').classList.contains('active');
       const scheduleItems = [];
 
-      const repeatTabLink = document.querySelector('#bulk-schedule-dialog .tabs a[data-ui="#weekly-repeat-tab"]');
-      const isRepeatTab = (repeatTabLink && repeatTabLink.classList.contains('active')) || document.getElementById('weekly-repeat-tab')?.classList.contains('active');
-      if (!isRepeatTab) {
-        const rows = detailDatetimeRowsEl.querySelectorAll('.datetime-row');
-        rows.forEach(row => {
-          const d = row.querySelector('.row-date')?.value;
-          if (!d) return;
-          const t = row.querySelector('.row-time')?.value || null;
-          const et = row.querySelector('.row-end-time')?.value || null;
-          const dur = (t && et) ? Math.max(0.25, timeToHours(et) - timeToHours(t)) : baseDuration;
-          scheduleItems.push({
-            date: d,
-            time: t,
-            endTime: (t && et) ? et : null,
-            isEndTimeUnset: !!(t && !et),
-            duration: dur
-          });
+      if (isMultiple) {
+        const rows = Array.from(detailDatetimeRowsEl.querySelectorAll('.datetime-row'));
+        rows.forEach(r => {
+          const dVal = r.querySelector('.row-date')?.value;
+          const tVal = r.querySelector('.row-time')?.value || null;
+          const etVal = r.querySelector('.row-end-time')?.value || null;
+          if (dVal) {
+            const dur = (tVal && etVal) ? Math.max(0.25, timeToHours(etVal) - timeToHours(tVal)) : baseDuration;
+            scheduleItems.push({
+              date: dVal,
+              time: tVal,
+              endTime: (tVal && etVal) ? etVal : null,
+              isEndTimeUnset: !!(tVal && !etVal),
+              duration: dur
+            });
+          }
         });
         if (scheduleItems.length === 0) {
-          alert('日時を少なくとも1つ指定してください。');
+          alert('日時を1件以上指定してください。');
           return;
         }
       } else {
@@ -1927,7 +2057,7 @@
         });
       }
 
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       recordHistory(title, memo, baseDuration, first.time || '');
       viewDate = new Date(first.date + 'T00:00:00');
       const dlg = document.getElementById('bulk-schedule-dialog');
@@ -2050,47 +2180,33 @@
       adjustHeight(e.target);
     })
 
-    document.getElementById('detail-save').addEventListener('click', () => {
+    document.getElementById('detail-save').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
       if (!ev) return;
       ev.title = document.getElementById('detail-title').value.trim() || ev.title;
       ev.memo = document.getElementById('detail-memo').value;
+      const durationInput = parseInt(detailDurationInput.value, 10);
+      ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
 
-      const dateVal = document.getElementById('detail-date').value;
-      const timeVal = document.getElementById('detail-time').value;
-
+      // 日時設定の保存
+      const dateVal = detailDateInput.value;
+      const timeVal = detailTimeSelect.value;
+      const endTimeVal = detailEndTimeSelect.value;
       if (dateVal) {
         ev.date = dateVal;
-        if (timeVal) {
-          const [h, m] = timeVal.split(':').map(Number);
-          const snappedM = Math.round((m || 0) / 15) * 15;
-          if (snappedM >= 60) {
-            ev.time = `${pad2((h + 1) % 24)}:00`;
-          } else {
-            ev.time = `${pad2(h)}:${pad2(snappedM)}`;
-          }
-        } else {
-          ev.time = null;
-        }
-      } else if (timeVal) {
-        ev.date = dateStr(viewDate);
-        const [h, m] = timeVal.split(':').map(Number);
-        const snappedM = Math.round((m || 0) / 15) * 15;
-        if (snappedM >= 60) {
-          ev.time = `${pad2((h + 1) % 24)}:00`;
-        } else {
-          ev.time = `${pad2(h)}:${pad2(snappedM)}`;
-        }
+        ev.time = timeVal || null;
+        ev.endTime = (timeVal && endTimeVal) ? endTimeVal : null;
+        ev.isEndTimeUnset = !!(timeVal && !endTimeVal);
       } else {
         ev.date = null;
         ev.time = null;
       }
 
       if (pendingStatus) ev.status = pendingStatus;
+      if (!await saveEvents(events)) return;
       pendingStatus = null;
-      saveEvents(events);
       recordHistory(ev.title, ev.memo, ev.duration, ev.time || '');
 
       if (ev.date) {
@@ -2102,7 +2218,7 @@
       showFeedback(ev.date ? `「${ev.title}」の日時を保存しました 📅` : `「${ev.title}」を保存しました（トレイ内）`);
     });
 
-    document.getElementById('detail-clear-date').addEventListener('click', () => {
+    document.getElementById('detail-clear-date').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents();
       const ev = events.find(e => e.id === selectedEventId);
@@ -2111,16 +2227,16 @@
       ev.time = null;
       ev.endTime = null;
       ev.isEndTimeUnset = false;
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       closeDetail();
       renderAll();
       showFeedback(`「${ev.title}」の日時をクリアし、トレイに戻しました`);
     });
 
-    document.getElementById('detail-delete').addEventListener('click', () => {
+    document.getElementById('detail-delete').addEventListener('click', async () => {
       if (!selectedEventId) return;
       const events = loadEvents().filter(e => e.id !== selectedEventId);
-      saveEvents(events);
+      if (!await saveEvents(events)) return;
       closeDetail();
       renderAll();
     });
@@ -2195,7 +2311,8 @@
       });
     });
 
-    function checkReminders() {
+    async function checkReminders() {
+      if (!store.ready || store.busy || loading) return;
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       const events = loadEvents();
       const now = Date.now();
@@ -2212,11 +2329,13 @@
         ev.remindedOn = today;
         changed = true;
       });
-      if (changed) saveEvents(events);
+      if (changed) await saveEvents(events);
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkReminders();
+      if (document.visibilityState === 'visible' && !selectedEventId) {
+        refreshEvents().then(checkReminders);
+      }
     });
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -2228,6 +2347,7 @@
     })
 
     // ============================================================
+    // ============================================================
     // 全体描画
     // ============================================================
     function renderAll() {
@@ -2236,14 +2356,32 @@
       else renderTimeline();
     }
 
+    async function initializeApp() {
+      try {
+        const result = await LoginApi.request('/api/auth/me/');
+        if (currentUser) {
+          currentUser.textContent = result.user.username
+            ? `${result.user.username}（${result.user.email}）`
+            : result.user.email;
+        }
+        await refreshEvents();
+        if (calendarContent) calendarContent.hidden = false;
+        await checkReminders();
+      } catch (error) {
+        if (error.status !== 401) setSync(error.message, true);
+      }
+    }
+
     // ============================================================
     // 初期化
     // ============================================================
     initTheme();
     renderFavorites();
     updateNotifyBtn();
-    renderAll();
-    checkReminders();
+    initializeApp();
+    window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
+  
+    }
   </script>
 </body>
 

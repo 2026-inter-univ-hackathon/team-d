@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ログイン | 助じゅ～る</title>
+  <link rel="stylesheet" href="/static/login/auth.css">
+</head>
+<body>
+<main>
+  <h1>助じゅ～る</h1>
+  <p class="lead">自分の予定を、決まったところから。</p>
+  <section>
+    <nav aria-label="アカウント">
+      <a href="/login/" aria-current="page">ログイン</a>
+      <a href="/signup/">新規登録</a>
+    </nav>
+    <h2>ログイン</h2>
+    <form id="auth-form" data-mode="login" data-success-url="/">
+      <div id="auth-error" class="errorlist" role="alert" aria-live="assertive"></div>
+      <div id="auth-info" class="successlist" role="status" aria-live="polite"></div>
+      <label for="id_email">メールアドレス</label>
+      <input id="id_email" name="email" type="email" maxlength="254" required autocomplete="email" autocapitalize="none" spellcheck="false">
+      <label for="id_password">パスワード</label>
+      <input id="id_password" name="password" type="password" minlength="6" required autocomplete="current-password">
+      <button type="submit">ログイン</button>
+      <button id="password-reset" type="button" class="secondary">パスワード再設定メールを送る</button>
+    </form>
+  </section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script src="/static/firebase-config.js"></script>
+<script src="/static/firebase-app.js"></script>
+<script src="/static/login/firebase-auth.js"></script>
+<script src="/static/firebase-events.js"></script>
+<script src="/static/login/api.js"></script>
+<script src="/static/login/auth.js"></script>
+</body>
+</html>
