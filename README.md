@@ -53,10 +53,6 @@ Windowsでは `py scripts\run_local.py` を実行します。起動後、ブラ�
 | --- | --- |
 |  |  |
 
-## 旧Django・SQLite版
-
-以前のDjango・SQLite版の記録は、[Django・SQLite版の説明](docs/DJANGO_SETUP.md)を参照してください。現在の画面はDjangoを使用しません。
-
 ## Firebase・GitHub Pages版
 
 現在のFirebase Authentication・Cloud Firestore構成と、GitHub Pages用ファイルの生成方法は、[Firebase・GitHub Pages版の説明](docs/FIREBASE_SETUP.md)を参照してください。

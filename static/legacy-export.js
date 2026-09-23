@@ -4,11 +4,11 @@ if (window.location.protocol === 'file:') {
     const main = document.createElement('main');
     main.innerHTML = `
       <h1>助じゅ～る — 以前の予定を書き出す</h1>
-      <p>現在のアプリはDjangoから開きます。以前このファイルで使っていた予定は、ここから書き出せます。</p>
+      <p>現在のアプリはFirebase版のローカルサーバーから開きます。以前このファイルで使っていた予定は、ここから書き出せます。</p>
       <p>以前と同じブラウザ・プロファイル・ファイルの場所で開いてください。</p>
       <button id="export-legacy" type="button">予定をJSONに書き出す</button>
       <p id="export-result" role="status"></p>
-      <p>書き出したら <a href="http://localhost:8000/">アプリを開く</a> → ログイン →「以前の予定を取り込む」でJSONを選んでください。</p>`;
+      <p>書き出したら <a href="http://127.0.0.1:8080/login.html">アプリを開く</a> → ログイン →「以前の予定を取り込む」でJSONを選んでください。</p>`;
     document.body.replaceChildren(main);
     document.title = '以前の予定を書き出す | 助じゅ～る';
     document.getElementById('export-legacy').addEventListener('click', () => {

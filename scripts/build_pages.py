@@ -42,7 +42,7 @@ def pages_auth_html(source):
 def assert_safe_output(output):
     allowed_suffixes = {".html", ".css", ".js", ""}
     forbidden_text = (
-        "{%", "{{", "DJANGO_SECRET_KEY", "django-insecure-", "apiBaseUrl",
+        "{%", "{{", "private_key", "serviceAccount", "apiBaseUrl",
     )
     for path in output.rglob("*"):
         if path.is_dir():

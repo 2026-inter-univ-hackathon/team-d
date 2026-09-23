@@ -81,13 +81,14 @@ dist/
 ├── signup.html
 └── static/
     ├── app-config.js
+    ├── firebase-app.js
     ├── firebase-config.js
     ├── firebase-events.js
     ├── calendar-store.js
     └── login/
 ```
 
-`dist/` は生成物のためGitの管理対象外です。生成処理はDjango APIのURLを必要としません。
+`dist/` は生成物のためGitの管理対象外です。生成処理は外部APIのURLを必要としません。
 
 ## 生成物をローカルで確認する
 

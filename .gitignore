@@ -13,8 +13,7 @@ node_modules/
 *.log
 仕様書.md
 
-# Django / Python
-!.env.example
+# ローカル設定・Python生成物
 .venv/
 __pycache__/
 *.py[cod]
