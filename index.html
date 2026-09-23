@@ -320,11 +320,6 @@
         gap: 2px;
       }
 
-      .weekday {
-        font-size: .7rem;
-        padding: 2px 0;
-      }
-
       .day-num {
         font-size: .7rem;
         line-height: 1;
@@ -338,31 +333,9 @@
       }
     }
 
-    /* ---------------- favorites ---------------- */
-    .favorites-section {
-      background: #f8fafc;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-    }
-
     #detail-section {
       display: none;
       transition: all var(--speed2);
-    }
-
-    .favorites-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .favorites-title {
-      font-size: .85rem;
-      font-weight: bold;
-      color: #4a5568;
     }
 
     .favorites-list {
@@ -372,26 +345,7 @@
       align-items: center;
     }
 
-    .fav-chip {
-      display: inline-flex;
-      align-items: center;
-      background: #eef4fb;
-      color: var(--accent);
-      border: 1px solid #c7dcf3;
-      border-radius: 16px;
-      padding: 3px 10px;
-      font-size: .85rem;
-      cursor: pointer;
-      user-select: none;
-      transition: background .15s, border-color .15s, transform .15s;
-    }
-
-    .fav-chip:hover {
-      background: #dce8f7;
-      border-color: var(--accent);
-    }
-
-    .fav-chip.applied {
+    .chip.applied {
       animation: fav-pulse 0.3s ease-in-out;
     }
 
@@ -402,27 +356,11 @@
 
       50% {
         transform: scale(1.06);
-        background: #c3daf5;
       }
 
       100% {
         transform: scale(1);
       }
-    }
-
-    .fav-chip .remove-fav {
-      margin-left: 6px;
-      color: #888;
-      font-size: .95rem;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0 2px;
-      border-radius: 50%;
-    }
-
-    .fav-chip .remove-fav:hover {
-      color: #c0392b;
-      font-weight: bold;
     }
 
     /* ---------------- history dropdown ---------------- */
@@ -466,12 +404,6 @@
       margin-left: 8px;
     }
 
-    /* ---------------- schedule options panel ---------------- */
-    .schedule-options-panel {
-      margin-top: 10px;
-      padding: 14px;
-    }
-
     .datetime-rows-list {
       display: flex;
       flex-direction: column;
@@ -501,8 +433,8 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      border: 1px solid var(--line);
-      background: #fff;
+      background: var(--secondary);
+      color: var(--on-secondary);
       font-size: .85rem;
       cursor: pointer;
       user-select: none;
@@ -514,20 +446,9 @@
     }
 
     .weekday-pill.checked {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
+      background: var(--secondary-container);
+      color: var(--on-secondary-container);
       font-weight: bold;
-    }
-
-    .weekday-pill.weekend {
-      color: #c0392b;
-    }
-
-    .weekday-pill.weekend.checked {
-      background: #c0392b;
-      color: #fff;
-      border-color: #c0392b;
     }
 
     .small-btn {
