@@ -73,5 +73,11 @@ service cloud.firestore {
 
       allow delete: if isOwner(userId);
     }
+
+    match /mail/{mailId} {
+      allow create: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.resource.data.to == request.auth.token.email;
+    }
   }
 }
