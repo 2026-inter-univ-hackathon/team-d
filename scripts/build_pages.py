@@ -77,9 +77,17 @@ def build(output=DEFAULT_OUTPUT, firebase_config=FIREBASE_CONFIG_FILE):
         source = (ROOT / "login" / "templates" / "login" / f"{name}.html").read_text(encoding="utf-8")
         (output / f"{name}.html").write_text(pages_auth_html(source), encoding="utf-8")
 
+    emailjs_lines = []
+    source_app_config = (ROOT / "static" / "app-config.js").read_text(encoding="utf-8")
+    for key in ("serviceId", "templateId", "publicKey"):
+        m = re.search(rf"\b{key}\s*:\s*(['\"])(.*?)\1", source_app_config)
+        if m:
+            emailjs_lines.append(f"  {key}: '{m.group(2)}',\n")
+
     config = (
         "window.APP_CONFIG = Object.freeze({\n"
         "  loginUrl: 'login.html',\n"
+        + "".join(emailjs_lines) +
         "});\n"
     )
     (output / "static" / "app-config.js").write_text(config, encoding="utf-8")

@@ -13,8 +13,10 @@ class PagesBuildTests(unittest.TestCase):
                 ".nojekyll", "index.html", "login.html", "signup.html",
                 "static/app-config.js", "static/calendar-store.js", "static/legacy-export.js",
                 "static/firebase-app.js", "static/firebase-config.js", "static/firebase-events.js",
-                "static/login/api.js", "static/login/auth.js", "static/login/auth.css",
+                "static/login/api.js", "static/login/auth.js",
                 "static/login/firebase-auth.js",
+                "static/theme.js", "static/calendar.css", "static/calendar-utils.js", "static/calendar-notifications.js",
+                "static/calendar-views.js", "static/calendar-dialogs.js", "static/calendar-main.js",
             }
             files = {str(path.relative_to(output)) for path in output.rglob("*") if path.is_file()}
             self.assertEqual(files, expected)
