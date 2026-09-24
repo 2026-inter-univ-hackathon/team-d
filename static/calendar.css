@@ -67,6 +67,7 @@
   padding: 4px;
   display: flex;
   flex-direction: column;
+  gap: 2px;
   overflow: hidden;
 }
 
@@ -103,6 +104,24 @@
 
 .day-cell.today > .day-num > .date:hover {
   background-color: var(--inverse-primary);
+  color: var(--primary);
+}
+
+.more-events {
+  font-size: .75rem;
+  color: var(--on-surface-variant, #666);
+  padding: 2px 4px;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  font-weight: 600;
+  border-radius: 4px;
+  line-height: 1.2;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.more-events:hover {
+  background-color: var(--surface-container-highest, rgba(0, 0, 0, 0.08));
   color: var(--primary);
 }
 
