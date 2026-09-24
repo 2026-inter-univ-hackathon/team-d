@@ -318,7 +318,7 @@ async function handleBulkExpand() {
   const title = document.getElementById('detail-title').value.trim() || ev.title;
   const memo = document.getElementById('detail-memo').value;
   const status = pendingStatus || ev.status || 'TENTATIVE';
-  const baseDuration = (detailDurationInput ? parseInt(detailDurationInput.value, 10) : 0) || ev.duration || 1;
+  const baseDuration = (detailDurationInput ? parseFloat(detailDurationInput.value) : 0) || ev.duration || 1;
 
   const isMultiple = document.getElementById('multiple-datetime-tab')?.classList.contains('active');
   const scheduleItems = [];
@@ -549,7 +549,7 @@ async function handleDetailSave() {
 
   if (dateVal) {
     const calculatedDur = calcDurationFromDatesAndTimes(dateVal, timeVal, endDateVal, endTimeVal);
-    ev.duration = Math.min(8760, Math.max(1, calculatedDur));
+    ev.duration = Math.max(0.25, calculatedDur);
     ev.date = dateVal;
     ev.time = timeVal || null;
     ev.endTime = (timeVal && endTimeVal) ? endTimeVal : null;

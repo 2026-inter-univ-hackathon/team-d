@@ -125,13 +125,41 @@ test('validates fields before writing to Firestore', async () => {
     { ...eventFields, title: '' },
     { ...eventFields, status: 'unknown' },
     { ...eventFields, duration: 0 },
-    { ...eventFields, duration: 8761 },
-    { ...eventFields, time: '12:30' },
+    { ...eventFields, duration: -1 },
+    { ...eventFields, time: '25:00' },
+    { ...eventFields, time: '12:60' },
     { ...eventFields, unexpected: true },
   ]) {
     await assert.rejects(client.create(changes), FirebaseEventsClient.FirebaseEventsError);
   }
   assert.equal(records.size, 0);
+});
+
+test('allows minute intervals (15-min, etc.) and fractional or large duration', async () => {
+  const { client, records } = setup();
+  const created15Min = await client.create({
+    ...eventFields,
+    date: '2026-09-24',
+    time: '10:15',
+    duration: 0.25,
+  });
+  assert.equal(created15Min.time, '10:15');
+  assert.equal(created15Min.duration, 0.25);
+  const stored15Min = records.get(`users/owner-1/events/${created15Min.id}`);
+  assert.equal(stored15Min.time, '10:15');
+  assert.equal(stored15Min.duration, 0.25);
+
+  const createdLarge = await client.create({
+    ...eventFields,
+    date: '2026-09-24',
+    time: '14:45',
+    duration: 10000,
+  });
+  assert.equal(createdLarge.time, '14:45');
+  assert.equal(createdLarge.duration, 10000);
+  const storedLarge = records.get(`users/owner-1/events/${createdLarge.id}`);
+  assert.equal(storedLarge.time, '14:45');
+  assert.equal(storedLarge.duration, 10000);
 });
 
 test('allows duration greater than 24 hours without truncating', async () => {

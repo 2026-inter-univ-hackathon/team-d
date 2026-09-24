@@ -59,6 +59,8 @@ test('calcDurationFromTimes calculates duration including overnight end times', 
 });
 
 test('calcDurationFromDatesAndTimes calculates duration from start/end dates and times', () => {
+  // 15分刻み 10:00〜10:15 (0.25時間 / 15分)
+  assert.equal(context.calcDurationFromDatesAndTimes('2026-09-24', '10:00', '2026-09-24', '10:15'), 0.25);
   // 同日 10:00〜14:00 (4時間)
   assert.equal(context.calcDurationFromDatesAndTimes('2026-09-24', '10:00', '2026-09-24', '14:00'), 4);
   // 翌日またぎ 22:00〜翌日02:00 (4時間)
@@ -70,6 +72,8 @@ test('calcDurationFromDatesAndTimes calculates duration from start/end dates and
 });
 
 test('formatDuration produces human-friendly duration text', () => {
+  assert.equal(context.formatDuration(0.25), '15分');
+  assert.equal(context.formatDuration(1.5), '1時間30分');
   assert.equal(context.formatDuration(2), '2時間');
   assert.equal(context.formatDuration(24), '24時間 (1日間)');
   assert.equal(context.formatDuration(36), '36時間 (1日+12時間)');
