@@ -193,7 +193,7 @@ function renderFavorites() {
     const infoText = info.length > 0 ? ` [${info.join(', ')}]` : '';
     const tooltip = document.createElement("span");
     tooltip.className = 'tooltip bottom';
-    tooltip.innerHTML = `${fav.title}${infoText}${fav.memo ? '<br>' + fav.memo : ''}<br>クリックで入力欄に反映`;
+    tooltip.innerHTML = `${fav.title}${infoText}${fav.memo ? '<br>' + fav.memo : ''}<br>クリックでトレイに追加`;
     chip.appendChild(tooltip);
 
     const titleSpan = document.createElement('span');
@@ -224,11 +224,39 @@ function renderFavorites() {
   });
 }
 
-function applyFavorite(fav, chipEl) {
-  const input = document.getElementById('new-title');
-  if (!input) return;
-  input.value = fav.title;
-  input.focus();
+async function addEventToTray({ title, memo = '', duration = 1, time = null, status = 'TENTATIVE' }) {
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) return;
+  const events = typeof loadEvents === 'function' ? loadEvents() : [];
+  events.push({
+    id: typeof uid === 'function' ? uid() : String(Date.now()),
+    title: cleanTitle,
+    memo: memo || '',
+    status: status || 'TENTATIVE',
+    date: null,
+    time: time || null,
+    duration: duration || 1,
+    createdAt: Date.now(),
+    remindedOn: null,
+  });
+  if (typeof saveEvents === 'function') {
+    if (!await saveEvents(events)) return;
+  }
+  if (typeof recordHistory === 'function') {
+    recordHistory(cleanTitle, memo, duration, time || '');
+  }
+  if (typeof renderAll === 'function') {
+    renderAll();
+  }
+}
+
+async function applyFavorite(fav, chipEl) {
+  await addEventToTray({
+    title: fav.title,
+    memo: fav.memo || '',
+    duration: fav.duration || 1,
+    time: fav.time || null,
+  });
 
   if (chipEl) {
     chipEl.classList.remove('applied');
@@ -236,7 +264,7 @@ function applyFavorite(fav, chipEl) {
     chipEl.classList.add('applied');
   }
 
-  showFeedback(`「${fav.title}」を入力欄に反映しました`);
+  showFeedback(`「${fav.title}」をトレイに追加しました`);
 }
 
 // ============================================================
@@ -289,6 +317,20 @@ function recordHistory(title, memo = '', duration = 1, time = '') {
   } catch { }
 }
 
+function hideHistoryDropdown() {
+  const historyDropdown = document.getElementById('history-dropdown');
+  if (historyDropdown) {
+    historyDropdown.style.display = 'none';
+  }
+}
+
+function showHistoryDropdown() {
+  const historyDropdown = document.getElementById('history-dropdown');
+  if (historyDropdown) {
+    historyDropdown.style.display = 'block';
+  }
+}
+
 function renderHistoryDropdown(query = '') {
   const historyDropdown = document.getElementById('history-dropdown');
   if (!historyDropdown) return;
@@ -299,7 +341,7 @@ function renderHistoryDropdown(query = '') {
 
   historyDropdown.innerHTML = '';
   if (filtered.length === 0) {
-    historyDropdown.style.display = 'none';
+    hideHistoryDropdown();
     return;
   }
 
@@ -324,23 +366,41 @@ function renderHistoryDropdown(query = '') {
     metaSpan.textContent = metaInfo.join(', ');
     row.appendChild(metaSpan);
 
-    row.addEventListener('click', (e) => {
+    // Prevent input blur before click event fires
+    row.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+
+    const handleSelect = (e) => {
+      e.preventDefault();
       e.stopPropagation();
       applyHistoryItem(item);
-      historyDropdown.style.display = 'none';
-    });
+      hideHistoryDropdown();
+    };
+
+    row.addEventListener('click', handleSelect);
 
     historyDropdown.appendChild(row);
   });
 
-  historyDropdown.style.display = 'block';
+  showHistoryDropdown();
 }
 
-function applyHistoryItem(item) {
+async function applyHistoryItem(item) {
   const newTitleInput = document.getElementById('new-title');
-  if (!newTitleInput) return;
-  newTitleInput.value = item.title;
-  newTitleInput.focus();
+  if (newTitleInput) {
+    newTitleInput.value = '';
+    newTitleInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  await addEventToTray({
+    title: item.title,
+    memo: item.memo || '',
+    duration: item.duration || 1,
+    time: item.time || null,
+  });
+  if (typeof showFeedback === 'function') {
+    showFeedback(`「${item.title}」をトレイに追加しました`);
+  }
 }
 
 // 履歴用リスナー設定
@@ -353,9 +413,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistoryDropdown(newTitleInput.value);
   });
 
-  newTitleInput.addEventListener("focusout", () => {
+  newTitleInput.addEventListener("focusout", (e) => {
+    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.input-history-wrapper')) {
+      return;
+    }
     setTimeout(() => {
-      historyDropdown.style.display = "none";
+      hideHistoryDropdown();
     }, 200);
   });
 
@@ -370,15 +433,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.input-history-wrapper')) {
-      historyDropdown.hidden = true;
-      historyDropdown.style.display = 'none';
+      hideHistoryDropdown();
     }
   });
 
   newTitleInput.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      historyDropdown.hidden = true;
-      historyDropdown.style.display = 'none';
+      hideHistoryDropdown();
     }
   });
 });
