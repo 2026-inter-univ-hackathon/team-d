@@ -134,7 +134,18 @@ function renderMonth() {
     num.innerHTML = `<span class="center date">${cellDate.getDate()}</span>`;
     cell.appendChild(num);
 
-    events.filter(ev => ev.date === cellStr).forEach(ev => cell.appendChild(createEventChip(ev)));
+    const dayEvents = events.filter(ev => ev.date === cellStr);
+    const MAX_VISIBLE_EVENTS = 2;
+    if (dayEvents.length >= 3) {
+      dayEvents.slice(0, MAX_VISIBLE_EVENTS).forEach(ev => cell.appendChild(createEventChip(ev)));
+      const moreEl = document.createElement('div');
+      moreEl.className = 'more-events';
+      moreEl.textContent = `+${dayEvents.length - MAX_VISIBLE_EVENTS}件`;
+      moreEl.title = `他 ${dayEvents.length - MAX_VISIBLE_EVENTS} 件の予定があります（クリックで日別表示）`;
+      cell.appendChild(moreEl);
+    } else {
+      dayEvents.forEach(ev => cell.appendChild(createEventChip(ev)));
+    }
 
     cell.addEventListener('click', (e) => {
       if (e.target.closest('.event')) return;

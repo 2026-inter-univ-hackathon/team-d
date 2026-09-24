@@ -47,10 +47,8 @@ function lockCalendar(locked) {
 async function saveEvents(events) {
   if (store.busy || loading || !store.ready) return false;
   lockCalendar(true);
-  setSync('保存しています…');
   try {
     await store.save(events);
-    setSync('同期完了');
     return true;
   } catch (error) {
     setSync(error.message, true);
@@ -64,11 +62,9 @@ async function refreshEvents() {
   if (loading) return;
   loading = true;
   lockCalendar(true);
-  setSync('予定を読み込んでいます…');
   try {
     await store.refresh();
     if (typeof renderAll === 'function') renderAll();
-    setSync('同期完了');
   } catch (error) {
     setSync(error.message, true);
     throw error;

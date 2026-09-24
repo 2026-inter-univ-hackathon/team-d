@@ -66,8 +66,12 @@ function initDialogElements() {
       if (!await saveEvents(events)) return;
       if (typeof recordHistory === 'function') recordHistory(title);
       if (input) input.value = '';
-      const historyDropdown = document.getElementById('history-dropdown');
-      if (historyDropdown) historyDropdown.hidden = true;
+      if (typeof hideHistoryDropdown === 'function') {
+        hideHistoryDropdown();
+      } else {
+        const historyDropdown = document.getElementById('history-dropdown');
+        if (historyDropdown) historyDropdown.style.display = 'none';
+      }
       renderAll();
     });
   }
@@ -76,8 +80,12 @@ function initDialogElements() {
   if (newTitleInput) {
     newTitleInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        const historyDropdown = document.getElementById('history-dropdown');
-        if (historyDropdown) historyDropdown.hidden = true;
+        if (typeof hideHistoryDropdown === 'function') {
+          hideHistoryDropdown();
+        } else {
+          const historyDropdown = document.getElementById('history-dropdown');
+          if (historyDropdown) historyDropdown.style.display = 'none';
+        }
         const addEventBtn = document.getElementById('add-event');
         if (addEventBtn) addEventBtn.click();
       }
