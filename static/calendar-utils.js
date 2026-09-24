@@ -99,6 +99,15 @@ function isEventOnDate(ev, targetDateStr) {
 function formatDuration(durationHours) {
   const dur = durationHours || 1;
   if (dur < 24) {
+    if (dur < 1) {
+      const mins = Math.round(dur * 60);
+      return `${mins}分`;
+    }
+    const h = Math.floor(dur);
+    const m = Math.round((dur - h) * 60);
+    if (m > 0) {
+      return `${h}時間${m}分`;
+    }
     return `${dur}時間`;
   }
   const days = Math.floor(dur / 24);
@@ -106,7 +115,10 @@ function formatDuration(durationHours) {
   if (remHours === 0) {
     return `${dur}時間 (${days}日間)`;
   }
-  return `${dur}時間 (${days}日+${remHours}時間)`;
+  const remH = Math.floor(remHours);
+  const remM = Math.round((remHours - remH) * 60);
+  const remText = remM > 0 ? `${remH}時間${remM}分` : `${remHours}時間`;
+  return `${dur}時間 (${days}日+${remText})`;
 }
 
 function parseEndTime(endTimeStr) {
@@ -159,7 +171,7 @@ function calcDurationFromDatesAndTimes(startDateStr, startTimeStr, endDateStr, e
   }
 
   const total = daysDiff * 24 + endHours - startHours;
-  return Math.max(1, Math.round(total));
+  return Math.max(0.25, Math.round(total * 4) / 4);
 }
 
 function getTimeOptionsHtml(selectedVal = '') {
