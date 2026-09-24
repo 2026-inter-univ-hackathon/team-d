@@ -134,17 +134,29 @@ function renderMonth() {
     num.innerHTML = `<span class="center date">${cellDate.getDate()}</span>`;
     cell.appendChild(num);
 
-    const dayEvents = events.filter(ev => ev.date === cellStr);
+    const dayEvents = events.filter(ev => isEventOnDate(ev, cellStr));
     const MAX_VISIBLE_EVENTS = 2;
     if (dayEvents.length >= 3) {
-      dayEvents.slice(0, MAX_VISIBLE_EVENTS).forEach(ev => cell.appendChild(createEventChip(ev)));
+      dayEvents.slice(0, MAX_VISIBLE_EVENTS).forEach(ev => {
+        const chip = createEventChip(ev);
+        if (ev.date !== cellStr) {
+          chip.classList.add('multi-day-span');
+        }
+        cell.appendChild(chip);
+      });
       const moreEl = document.createElement('div');
       moreEl.className = 'more-events';
       moreEl.textContent = `+${dayEvents.length - MAX_VISIBLE_EVENTS}件`;
       moreEl.title = `他 ${dayEvents.length - MAX_VISIBLE_EVENTS} 件の予定があります（クリックで日別表示）`;
       cell.appendChild(moreEl);
     } else {
-      dayEvents.forEach(ev => cell.appendChild(createEventChip(ev)));
+      dayEvents.forEach(ev => {
+        const chip = createEventChip(ev);
+        if (ev.date !== cellStr) {
+          chip.classList.add('multi-day-span');
+        }
+        cell.appendChild(chip);
+      });
     }
 
     cell.addEventListener('click', (e) => {
@@ -176,7 +188,7 @@ function renderTimeline() {
   let labelText = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月${viewDate.getDate()}日(${weekdayNames[viewDate.getDay()]})`;
   currentLabelEl.textContent = labelText;
 
-  const events = (typeof loadEvents === 'function' ? loadEvents() : []).filter(ev => ev.date === dayStr);
+  const events = (typeof loadEvents === 'function' ? loadEvents() : []).filter(ev => isEventOnDate(ev, dayStr));
 
   timelineAlldayEl.innerHTML = '';
   const untimed = events.filter(ev => !ev.time);
@@ -233,13 +245,44 @@ function renderTimeline() {
 
   const timed = events
     .filter(ev => ev.time)
-    .map(ev => ({ ev, start: timeToHours(ev.time), duration: ev.duration || 1 }));
+    .map(ev => {
+      const dur = ev.duration || 1;
+      let start = 0;
+      let dayDuration = dur;
+      let isContinuing = false;
+      let isEnding = true;
+
+      if (ev.date === dayStr) {
+        start = timeToHours(ev.time);
+        dayDuration = Math.min(24 - start, dur);
+        isContinuing = false;
+        isEnding = (start + dur) <= 24;
+      } else {
+        const dayDiff = Math.round((new Date(dayStr + 'T00:00:00') - new Date(ev.date + 'T00:00:00')) / 86400000);
+        const startHours = timeToHours(ev.time);
+        const elapsed = dayDiff * 24 - startHours;
+        const remaining = dur - elapsed;
+        start = 0;
+        dayDuration = Math.max(0.25, Math.min(24, remaining));
+        isContinuing = true;
+        isEnding = remaining <= 24;
+      }
+
+      return {
+        ev,
+        start,
+        duration: dayDuration,
+        isContinuing,
+        isEnding,
+        totalDuration: dur,
+      };
+    });
   const { laneOf, laneCount } = assignLanes(timed);
 
   const overlay = document.createElement('div');
   overlay.className = 'timeline-events-overlay';
   overlay.style.height = (24 * HOUR_H) + 'px';
-  timed.forEach(({ ev, start, duration }) => {
+  timed.forEach(({ ev, start, duration, isContinuing, isEnding, totalDuration }) => {
     const lane = laneOf[ev.id];
     const widthPct = 100 / laneCount;
     const chip = createTimedEventChip(ev, {
@@ -247,7 +290,7 @@ function renderTimeline() {
       height: Math.max(14, (duration * HOUR_H - 2)) + 'px',
       left: `calc(${lane * widthPct}%)`,
       width: `calc(${widthPct}% - 4px)`,
-    });
+    }, { isContinuing, isEnding, dayDuration: duration, totalDuration });
     overlay.appendChild(chip);
   });
 
@@ -297,29 +340,40 @@ function assignLanes(timedEvents) {
   return { laneOf, laneCount: Math.max(1, laneEnds.length) };
 }
 
-function createTimedEventChip(ev, style) {
+function createTimedEventChip(ev, style, options = {}) {
   const chip = createEventChip(ev);
   chip.classList.add('timed-event');
   const dur = ev.duration || 1;
-  if (dur <= 0.25) {
+  if ((options.dayDuration || dur) <= 0.25) {
     chip.classList.add('short-event');
   }
+  const isContinuing = options.isContinuing || false;
+  const isEnding = options.isEnding !== false;
+  if (isContinuing) chip.classList.add('multi-day-continuing');
+  if (!isEnding) chip.classList.add('multi-day-ending-next');
+
   const endTime = calcEndTime(ev.time, dur);
+  const timeBadgeText = isContinuing
+    ? `継続中 (〜${endTime})`
+    : (dur > 24 ? `${ev.time} - ${endTime} (${formatDuration(dur)})` : `${ev.time} - ${endTime}`);
+
   chip.innerHTML = `
-    <span class="event-time-badge">${ev.time} - ${endTime}</span>
+    <span class="event-time-badge">${timeBadgeText}</span>
     <span class="event-title-text">${escapeHtml(ev.title || '(無題)')}</span>
   `;
   Object.assign(chip.style, style);
 
-  const topHandle = document.createElement('div');
-  topHandle.className = 'resize-handle resize-handle-top';
-  topHandle.title = 'ドラッグして開始時刻を変更（15分刻み）';
-  topHandle.addEventListener('dragstart', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-  topHandle.addEventListener('pointerdown', (e) => startResizeTop(e, ev.id, chip));
-  chip.appendChild(topHandle);
+  if (!isContinuing) {
+    const topHandle = document.createElement('div');
+    topHandle.className = 'resize-handle resize-handle-top';
+    topHandle.title = 'ドラッグして開始時刻を変更（15分刻み）';
+    topHandle.addEventListener('dragstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    topHandle.addEventListener('pointerdown', (e) => startResizeTop(e, ev.id, chip));
+    chip.appendChild(topHandle);
+  }
 
   const bottomHandle = document.createElement('div');
   bottomHandle.className = 'resize-handle resize-handle-bottom';
@@ -364,9 +418,13 @@ function startResizeTop(e, id, chipEl) {
     finalTimeStr = `${pad2(h)}:${pad2(Math.round(m))}`;
 
     chipEl.style.top = `${finalStartHours * HOUR_H}px`;
-    chipEl.style.height = `${finalDuration * HOUR_H - 2}px`;
+    const dayDuration = Math.min(24 - finalStartHours, finalDuration);
+    chipEl.style.height = `${dayDuration * HOUR_H - 2}px`;
     if (timeBadge) {
-      timeBadge.textContent = `${finalTimeStr} - ${calcEndTime(finalTimeStr, finalDuration)}`;
+      const endTime = calcEndTime(finalTimeStr, finalDuration);
+      timeBadge.textContent = finalDuration > 24
+        ? `${finalTimeStr} - ${endTime} (${formatDuration(finalDuration)})`
+        : `${finalTimeStr} - ${endTime}`;
     }
   }
 
@@ -394,15 +452,20 @@ function startResize(e, id, chipEl) {
   const startClientY = e.clientY;
   let finalDuration = startDuration;
   const timeBadge = chipEl.querySelector('.event-time-badge');
+  const startHours = ev.time ? timeToHours(ev.time) : 0;
 
   function onMove(moveEvent) {
     const deltaPx = moveEvent.clientY - startClientY;
     const deltaQuarters = Math.round(deltaPx / (HOUR_H / 4));
     const newQuarters = Math.round(startDuration * 4) + deltaQuarters;
-    finalDuration = Math.min(24 * 4, Math.max(1, newQuarters)) / 4;
-    chipEl.style.height = `${finalDuration * HOUR_H - 2}px`;
+    finalDuration = Math.max(1, newQuarters) / 4;
+    const dayDuration = Math.min(24 - startHours, finalDuration);
+    chipEl.style.height = `${dayDuration * HOUR_H - 2}px`;
     if (timeBadge) {
-      timeBadge.textContent = `${ev.time} - ${calcEndTime(ev.time, finalDuration)}`;
+      const endTime = calcEndTime(ev.time, finalDuration);
+      timeBadge.textContent = finalDuration > 24
+        ? `${ev.time} - ${endTime} (${formatDuration(finalDuration)})`
+        : `${ev.time} - ${endTime}`;
     }
   }
 
