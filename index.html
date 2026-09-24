@@ -87,18 +87,29 @@
 
           <!-- 日時設定エリア -->
           <div style="margin: 8px 0;">
-            <nav>
-              <div class="row">
-                <div class="max field label border">
-                  <input id="detail-date" type="date">
-                  <label>日付</label>
-                </div>
-                <div class="max field label border">
-                  <input id="detail-time" type="time" step="900">
-                  <label>開始時刻</label>
-                </div>
+            <div class="row">
+              <div class="max field label border">
+                <input id="detail-date" type="date">
+                <label>開始日</label>
               </div>
-            </nav>
+              <div class="max field label border suffix">
+                <select id="detail-time"></select>
+                <label>開始時刻</label>
+                <i>arrow_drop_down</i>
+              </div>
+            </div>
+            <div class="row" style="margin-top: 6px;">
+              <div class="max field label border">
+                <input id="detail-end-date" type="date">
+                <label>終了日</label>
+              </div>
+              <div class="max field label border suffix">
+                <select id="detail-end-time"></select>
+                <label>終了時刻</label>
+                <i>arrow_drop_down</i>
+              </div>
+            </div>
+            <div id="detail-end-preview" class="small-text muted" style="margin: 4px 4px 8px; font-weight: 500;"></div>
           </div>
 
           <!-- 複数日時指定・繰り返し設定メニュー（ダイアログ起動） -->
@@ -151,7 +162,7 @@
   <button class="s square round large add-button" data-ui="#add-event-dialog" type="button">
     <i>add</i>
   </button>
-  <dialog class="modal bottom" id="add-event-dialog">
+  <dialog class="bottom" id="add-event-dialog">
     <nav>
       <h5 class="max">予定の追加</h5>
       <button class="transparent circle" data-ui="#add-event-dialog" type="button">
@@ -176,7 +187,7 @@
   </dialog>
 
   <!-- 複数日時・繰り返し一括展開ダイアログ -->
-  <dialog id="bulk-schedule-dialog" class="modal max">
+  <dialog id="bulk-schedule-dialog" class="max">
     <nav>
       <h5 class="max">複数日時・繰り返し展開</h5>
       <button class="transparent circle" data-ui="#bulk-schedule-dialog" type="button">
@@ -251,7 +262,7 @@
     </nav>
   </dialog>
 
-  <dialog id="setting-dialog" class="modal max">
+  <dialog id="setting-dialog" class="max">
     <nav>
       <h5 class="max">設定</h5>
       <button class="transparent circle" data-ui="#setting-dialog" type="button">
