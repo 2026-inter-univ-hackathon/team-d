@@ -94,8 +94,8 @@
       result.time = source.time;
     }
     if ('duration' in source) {
-      if (!Number.isInteger(source.duration) || source.duration < 1 || source.duration > 24) {
-        throw new FirebaseEventsError('所要時間は1〜24時間で入力してください。', 'validation/duration');
+      if (!Number.isInteger(source.duration) || source.duration < 1 || source.duration > 8760) {
+        throw new FirebaseEventsError('所要時間は1〜8760時間で入力してください。', 'validation/duration');
       }
       result.duration = source.duration;
     }
@@ -105,10 +105,6 @@
     const date = 'date' in result ? result.date : fields.date;
     if ('time' in result && result.time !== null && date === null) {
       throw new FirebaseEventsError('時刻を設定する場合は日付も必要です。', 'validation/time');
-    }
-    if (result.time && result.duration) {
-      const hour = Number(result.time.slice(0, 2));
-      if (hour + result.duration > 24) result.duration = 24 - hour;
     }
     return result;
   }

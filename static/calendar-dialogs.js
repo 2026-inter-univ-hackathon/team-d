@@ -4,9 +4,9 @@
 let pendingStatus = null;
 
 let detailDateInput;
+let detailEndDateInput;
 let detailTimeSelect;
 let detailEndTimeSelect;
-let detailDurationInput;
 let detailRepeatTimeSelect;
 let detailRepeatEndTimeSelect;
 let detailRepeatStartInput;
@@ -14,11 +14,38 @@ let detailRepeatEndInput;
 let detailDatetimeRowsEl;
 let bulkScheduleDialog;
 
+function updateDetailEndPreview() {
+  const previewEl = document.getElementById('detail-end-preview');
+  if (!previewEl) return;
+  const dateVal = detailDateInput ? detailDateInput.value : '';
+  const endDateVal = detailEndDateInput ? detailEndDateInput.value : '';
+  const timeVal = detailTimeSelect ? detailTimeSelect.value : '';
+  const endTimeVal = detailEndTimeSelect ? detailEndTimeSelect.value : '';
+
+  if (!dateVal) {
+    previewEl.textContent = '';
+    return;
+  }
+  const durVal = calcDurationFromDatesAndTimes(dateVal, timeVal, endDateVal, endTimeVal);
+  const formattedDur = formatDuration(durVal);
+  const effectiveEndD = endDateVal || dateVal;
+
+  if (effectiveEndD === dateVal && !timeVal) {
+    previewEl.innerHTML = `<span>📅 終日予定 (${formattedDur})</span>`;
+  } else if (effectiveEndD === dateVal) {
+    const endT = endTimeVal || (timeVal ? calcEndTime(timeVal, 1) : '');
+    previewEl.innerHTML = `<span>📅 終了: ${endT} (${formattedDur})</span>`;
+  } else {
+    const endT = endTimeVal ? ` ${endTimeVal}` : '';
+    previewEl.innerHTML = `<span style="color: var(--primary);">📅 終了: ${effectiveEndD}${endT} (${formattedDur} / 日付またぎ)</span>`;
+  }
+}
+
 function initDialogElements() {
   detailDateInput = document.getElementById('detail-date');
+  detailEndDateInput = document.getElementById('detail-end-date');
   detailTimeSelect = document.getElementById('detail-time');
   detailEndTimeSelect = document.getElementById('detail-end-time');
-  detailDurationInput = document.getElementById('detail-duration');
   detailRepeatTimeSelect = document.getElementById('detail-repeat-time');
   detailRepeatEndTimeSelect = document.getElementById('detail-repeat-end-time');
   detailRepeatStartInput = document.getElementById('detail-repeat-start');
@@ -26,9 +53,55 @@ function initDialogElements() {
   detailDatetimeRowsEl = document.getElementById('detail-datetime-rows');
   bulkScheduleDialog = document.getElementById('bulk-schedule-dialog');
 
-  if (detailTimeSelect && detailEndTimeSelect) {
-    bindTimeAndDuration(detailTimeSelect, detailEndTimeSelect);
+  if (detailDateInput) {
+    detailDateInput.addEventListener('change', () => {
+      const startVal = detailDateInput.value;
+      if (startVal && detailEndDateInput) {
+        if (!detailEndDateInput.value || detailEndDateInput.value < startVal) {
+          detailEndDateInput.value = startVal;
+        }
+      }
+      updateDetailEndPreview();
+    });
   }
+
+  if (detailEndDateInput) {
+    detailEndDateInput.addEventListener('change', () => {
+      if (detailDateInput && detailDateInput.value && detailEndDateInput.value) {
+        if (detailEndDateInput.value < detailDateInput.value) {
+          detailEndDateInput.value = detailDateInput.value;
+        }
+      }
+      updateDetailEndPreview();
+    });
+  }
+
+  if (detailTimeSelect && detailEndTimeSelect) {
+    detailTimeSelect.addEventListener('change', () => {
+      const startT = detailTimeSelect.value;
+      if (startT && !detailEndTimeSelect.value) {
+        detailEndTimeSelect.value = calcEndTime(startT, 1);
+      }
+      updateDetailEndPreview();
+    });
+
+    detailEndTimeSelect.addEventListener('change', () => {
+      const startT = detailTimeSelect.value;
+      const endT = detailEndTimeSelect.value;
+      if (startT && endT && detailDateInput && detailEndDateInput) {
+        // もし終了日が開始日と同じで、終了時刻が開始時刻より前の場合は終了日を翌日に自動進める
+        if (detailDateInput.value && detailEndDateInput.value === detailDateInput.value) {
+          if (timeToHours(endT) < timeToHours(startT)) {
+            const nextD = new Date(detailDateInput.value + 'T00:00:00');
+            nextD.setDate(nextD.getDate() + 1);
+            detailEndDateInput.value = dateStr(nextD);
+          }
+        }
+      }
+      updateDetailEndPreview();
+    });
+  }
+
   if (detailRepeatTimeSelect && detailRepeatEndTimeSelect) {
     bindTimeAndDuration(detailRepeatTimeSelect, detailRepeatEndTimeSelect);
   }
@@ -382,9 +455,13 @@ function openDetail(id) {
   document.getElementById('detail-title').value = ev.title;
   document.getElementById('detail-memo').value = ev.memo || '';
   if (detailDateInput) detailDateInput.value = ev.date || '';
-  if (detailTimeSelect) detailTimeSelect.value = ev.time || '';
+  if (detailEndDateInput) {
+    detailEndDateInput.value = ev.date ? calcEndDate(ev.date, ev.time, ev.duration || 1) : '';
+  }
+  if (detailTimeSelect) detailTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
+  const currentEndTime = ev.endTime || (ev.time && ev.duration ? calcEndTime(ev.time, ev.duration) : '');
+  if (detailEndTimeSelect) detailEndTimeSelect.innerHTML = getEndTimeOptionsHtml(currentEndTime);
 
-  if (detailDateInput) detailDateInput.value = ev.date || '';
   if (detailRepeatTimeSelect) detailRepeatTimeSelect.innerHTML = getTimeOptionsHtml(ev.time || '');
   if (detailRepeatEndTimeSelect) detailRepeatEndTimeSelect.innerHTML = getEndTimeOptionsHtml(ev.endTime || '');
 
@@ -423,6 +500,7 @@ function openDetail(id) {
   if (pageWeekly) pageWeekly.classList.remove('active');
 
   highlightStatus(ev.status);
+  updateDetailEndPreview();
   const calendarSection = document.getElementById('calendar-section');
   if (calendarSection) calendarSection.className = 's12 m7 l8';
   if (detailSection) {
@@ -463,13 +541,15 @@ async function handleDetailSave() {
   if (!ev) return;
   ev.title = document.getElementById('detail-title').value.trim() || ev.title;
   ev.memo = document.getElementById('detail-memo').value;
-  const durationInput = detailDurationInput ? parseInt(detailDurationInput.value, 10) : NaN;
-  ev.duration = Number.isFinite(durationInput) ? Math.min(24, Math.max(1, durationInput)) : (ev.duration || 1);
 
   const dateVal = detailDateInput ? detailDateInput.value : '';
+  const endDateVal = detailEndDateInput ? detailEndDateInput.value : '';
   const timeVal = detailTimeSelect ? detailTimeSelect.value : '';
   const endTimeVal = detailEndTimeSelect ? detailEndTimeSelect.value : '';
+
   if (dateVal) {
+    const calculatedDur = calcDurationFromDatesAndTimes(dateVal, timeVal, endDateVal, endTimeVal);
+    ev.duration = Math.min(8760, Math.max(1, calculatedDur));
     ev.date = dateVal;
     ev.time = timeVal || null;
     ev.endTime = (timeVal && endTimeVal) ? endTimeVal : null;
@@ -477,6 +557,8 @@ async function handleDetailSave() {
   } else {
     ev.date = null;
     ev.time = null;
+    ev.endTime = null;
+    ev.isEndTimeUnset = false;
   }
 
   if (pendingStatus) ev.status = pendingStatus;

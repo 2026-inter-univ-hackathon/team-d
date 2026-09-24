@@ -125,12 +125,26 @@ test('validates fields before writing to Firestore', async () => {
     { ...eventFields, title: '' },
     { ...eventFields, status: 'unknown' },
     { ...eventFields, duration: 0 },
+    { ...eventFields, duration: 8761 },
     { ...eventFields, time: '12:30' },
     { ...eventFields, unexpected: true },
   ]) {
     await assert.rejects(client.create(changes), FirebaseEventsClient.FirebaseEventsError);
   }
   assert.equal(records.size, 0);
+});
+
+test('allows duration greater than 24 hours without truncating', async () => {
+  const { client, records } = setup();
+  const created = await client.create({
+    ...eventFields,
+    date: '2026-09-24',
+    time: '10:00',
+    duration: 48,
+  });
+  assert.equal(created.duration, 48);
+  const stored = records.get(`users/owner-1/events/${created.id}`);
+  assert.equal(stored.duration, 48);
 });
 
 test('imports legacy events idempotently with deterministic document ids', async () => {

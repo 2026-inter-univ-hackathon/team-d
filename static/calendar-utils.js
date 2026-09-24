@@ -50,12 +50,116 @@ function hoursToTime(hours) {
 function calcEndTime(startTimeStr, durationHours) {
   if (!startTimeStr) return '';
   const start = timeToHours(startTimeStr);
-  const end = Math.min(24, start + (durationHours || 1));
-  let totalMin = Math.round(end * 60);
+  const dur = durationHours || 1;
+  const total = start + dur;
+  const days = Math.floor(total / 24);
+  const rem = total % 24;
+  let totalMin = Math.round(rem * 60);
   totalMin = Math.round(totalMin / 15) * 15;
-  const endH = Math.floor(totalMin / 60);
-  const endM = totalMin % 60;
-  return `${pad2(endH)}:${pad2(endM)}`;
+  let endH = Math.floor(totalMin / 60);
+  let endM = totalMin % 60;
+  if (endH >= 24) {
+    endH = 0;
+  }
+  const timeStr = `${pad2(endH)}:${pad2(endM)}`;
+  if (days === 0) return timeStr;
+  if (days === 1) return `翌日 ${timeStr}`;
+  return `+${days}日 ${timeStr}`;
+}
+
+function calcEndDate(startDateStr, startTimeStr, durationHours) {
+  if (!startDateStr) return null;
+  const startHours = startTimeStr ? timeToHours(startTimeStr) : 0;
+  const dur = durationHours || 1;
+  const totalHours = startHours + dur;
+  const days = startTimeStr
+    ? Math.floor((totalHours - 0.001) / 24)
+    : Math.max(0, Math.ceil(dur / 24) - 1);
+  const d = new Date(startDateStr + 'T00:00:00');
+  d.setDate(d.getDate() + Math.max(0, days));
+  return dateStr(d);
+}
+
+function getEventDateRange(ev) {
+  if (!ev || !ev.date) return null;
+  const startDate = ev.date;
+  const dur = ev.duration || 1;
+  const endDate = calcEndDate(startDate, ev.time, dur);
+  return { startDate, endDate };
+}
+
+function isEventOnDate(ev, targetDateStr) {
+  if (!ev || !ev.date) return false;
+  if (ev.date === targetDateStr) return true;
+  const range = getEventDateRange(ev);
+  if (!range) return false;
+  return targetDateStr >= range.startDate && targetDateStr <= range.endDate;
+}
+
+function formatDuration(durationHours) {
+  const dur = durationHours || 1;
+  if (dur < 24) {
+    return `${dur}時間`;
+  }
+  const days = Math.floor(dur / 24);
+  const remHours = dur % 24;
+  if (remHours === 0) {
+    return `${dur}時間 (${days}日間)`;
+  }
+  return `${dur}時間 (${days}日+${remHours}時間)`;
+}
+
+function parseEndTime(endTimeStr) {
+  if (!endTimeStr) return null;
+  const matchPlus = endTimeStr.match(/^\+(\d+)日\s*(\d{2}):(\d{2})$/);
+  if (matchPlus) {
+    const days = parseInt(matchPlus[1], 10);
+    const h = parseInt(matchPlus[2], 10);
+    const m = parseInt(matchPlus[3], 10);
+    return days * 24 + h + m / 60;
+  }
+  const matchNext = endTimeStr.match(/^翌日\s*(\d{2}):(\d{2})$/);
+  if (matchNext) {
+    const h = parseInt(matchNext[1], 10);
+    const m = parseInt(matchNext[2], 10);
+    return 24 + h + m / 60;
+  }
+  return timeToHours(endTimeStr);
+}
+
+function calcDurationFromTimes(startTimeStr, endTimeStr) {
+  if (!startTimeStr || !endTimeStr) return null;
+  const start = timeToHours(startTimeStr);
+  let end = parseEndTime(endTimeStr);
+  if (end === null) return null;
+  // もし開始時刻が 22:00 で終了が 02:00 のように指定された場合、翌日 02:00（日付またぎ）として計算
+  if (!endTimeStr.includes('翌日') && !endTimeStr.includes('+') && end <= start) {
+    end += 24;
+  }
+  return Math.max(0.25, end - start);
+}
+
+function calcDurationFromDatesAndTimes(startDateStr, startTimeStr, endDateStr, endTimeStr) {
+  if (!startDateStr) return 1;
+  const effectiveEndDateStr = endDateStr || startDateStr;
+  const startD = new Date(startDateStr + 'T00:00:00');
+  const endD = new Date(effectiveEndDateStr + 'T00:00:00');
+  const daysDiff = Math.max(0, Math.round((endD - startD) / (24 * 60 * 60 * 1000)));
+
+  if (!startTimeStr && !endTimeStr) {
+    return Math.max(1, (daysDiff + 1) * 24);
+  }
+
+  const startHours = startTimeStr ? timeToHours(startTimeStr) : 0;
+  let endHours = 0;
+  if (endTimeStr) {
+    endHours = timeToHours(endTimeStr) || 24;
+  } else {
+    endHours = startTimeStr ? (startHours + 1) : 24;
+  }
+
+  const total = daysDiff * 24 + endHours - startHours;
+  return Math.max(1, Math.round(total));
 }
 
 function getTimeOptionsHtml(selectedVal = '') {
@@ -78,6 +182,8 @@ function getTimeOptionsHtml(selectedVal = '') {
 function getEndTimeOptionsHtml(selectedVal = '') {
   let html = '<option value="">未定（指定なし）</option>';
   let found = false;
+
+  html += '<optgroup label="当日">';
   for (let totalMin = 15; totalMin <= 24 * 60; totalMin += 15) {
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
@@ -86,26 +192,41 @@ function getEndTimeOptionsHtml(selectedVal = '') {
     if (sel) found = true;
     html += `<option value="${t}"${sel}>${t}</option>`;
   }
+  html += '</optgroup>';
+
+  html += '<optgroup label="翌日（日付またぎ）">';
+  for (let totalMin = 0; totalMin <= 24 * 60; totalMin += 30) {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const t = `翌日 ${pad2(h)}:${pad2(m)}`;
+    const sel = t === selectedVal ? ' selected' : '';
+    if (sel) found = true;
+    html += `<option value="${t}"${sel}>${t}</option>`;
+  }
+  html += '</optgroup>';
+
   if (selectedVal && !found) {
     html += `<option value="${selectedVal}" selected>${selectedVal}</option>`;
   }
   return html;
 }
 
-// 開始時刻・終了時刻の双方向連動ヘルパー
-function bindTimeAndDuration(timeEl, endTimeEl, onUpdate) {
+// 開始時刻・終了時刻・所要時間の双方向連動ヘルパー
+function bindTimeAndDuration(timeEl, endTimeEl, durationEl, onUpdate) {
+  if (typeof durationEl === 'function') {
+    onUpdate = durationEl;
+    durationEl = null;
+  }
   if (!timeEl || !endTimeEl) return;
 
   timeEl.addEventListener('change', () => {
     const startVal = timeEl.value;
     if (!startVal) {
       endTimeEl.value = '';
-    } else if (endTimeEl.value) {
-      const startHours = timeToHours(startVal);
-      const endHours = timeToHours(endTimeEl.value);
-      if (endHours <= startHours) {
-        endTimeEl.value = calcEndTime(startVal, 1);
-      }
+      if (durationEl && !durationEl.value) durationEl.value = '1';
+    } else {
+      const dur = durationEl && parseInt(durationEl.value, 10) ? parseInt(durationEl.value, 10) : 1;
+      endTimeEl.value = calcEndTime(startVal, dur);
     }
     if (typeof onUpdate === 'function') onUpdate();
   });
@@ -113,19 +234,26 @@ function bindTimeAndDuration(timeEl, endTimeEl, onUpdate) {
   endTimeEl.addEventListener('change', () => {
     const endVal = endTimeEl.value;
     if (endVal) {
-      const endHours = timeToHours(endVal);
       if (!timeEl.value) {
-        const startHours = Math.max(0, endHours - 1);
-        timeEl.value = hoursToTime(startHours);
-      } else {
-        const startHours = timeToHours(timeEl.value);
-        if (endHours <= startHours) {
-          endTimeEl.value = calcEndTime(timeEl.value, 1);
-        }
+        timeEl.value = '09:00';
+      }
+      const dur = calcDurationFromTimes(timeEl.value, endVal);
+      if (dur !== null) {
+        if (durationEl) durationEl.value = String(Math.round(dur));
       }
     }
     if (typeof onUpdate === 'function') onUpdate();
   });
+
+  if (durationEl) {
+    durationEl.addEventListener('input', () => {
+      const durVal = parseInt(durationEl.value, 10);
+      if (durVal && durVal >= 1 && timeEl.value) {
+        endTimeEl.value = calcEndTime(timeEl.value, durVal);
+      }
+      if (typeof onUpdate === 'function') onUpdate();
+    });
+  }
 }
 
 // ============================================================

@@ -75,7 +75,7 @@
   opacity: 0.5;
 }
 
-.day-cell.today > .day-num > .date {
+.day-cell.today>.day-num>.date {
   background: var(--primary);
   color: var(--on-primary);
 }
@@ -87,7 +87,7 @@
   align-items: center;
 }
 
-.day-num > .date {
+.day-num>.date {
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -98,11 +98,11 @@
   transition: background-color .15s ease, color 0.2s ease;
 }
 
-.day-num > .date:hover {
+.day-num>.date:hover {
   background-color: var(--surface-container-highest);
 }
 
-.day-cell.today > .day-num > .date:hover {
+.day-cell.today>.day-num>.date:hover {
   background-color: var(--inverse-primary);
   color: var(--primary);
 }
@@ -477,4 +477,40 @@
 #toast-error {
   background-color: var(--error, #ba1a1a) !important;
   color: var(--on-error, #ffffff) !important;
+}
+
+/* ---------------- multi-day & overnight events ---------------- */
+.event.multi-day-span {
+  opacity: 0.9;
+  border-left-width: 4px;
+}
+
+.event.multi-day-span::before {
+  content: '↳ ';
+  font-weight: bold;
+  opacity: 0.85;
+}
+
+.timed-event.multi-day-continuing {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 2px dashed rgba(255, 255, 255, 0.6);
+}
+
+.timed-event.multi-day-ending-next {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.6);
+}
+
+/* ---------------- dialog styles ---------------- */
+dialog {
+  z-index: 1000 !important;
+}
+
+/* select ドロップダウンの option / optgroup */
+body.dark select option,
+body.dark select optgroup {
+  background-color: #1e1e1e !important;
+  color: #f1f5f9 !important;
 }
