@@ -15,7 +15,7 @@
     'createdAt', 'remindedOn',
   ]);
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-  const TIME_PATTERN = /^(?:[01]\d|2[0-3]):00$/;
+  const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
   class FirebaseEventsError extends Error {
     constructor(message, code = 'events/unknown', status = 400) {
@@ -89,13 +89,13 @@
     if ('date' in source) result.date = validateDate(source.date, '日付');
     if ('time' in source) {
       if (source.time !== null && (typeof source.time !== 'string' || !TIME_PATTERN.test(source.time))) {
-        throw new FirebaseEventsError('時刻はHH:00形式で入力してください。', 'validation/time');
+        throw new FirebaseEventsError('時刻はHH:MM形式で入力してください。', 'validation/time');
       }
       result.time = source.time;
     }
     if ('duration' in source) {
-      if (!Number.isInteger(source.duration) || source.duration < 1 || source.duration > 8760) {
-        throw new FirebaseEventsError('所要時間は1〜8760時間で入力してください。', 'validation/duration');
+      if (typeof source.duration !== 'number' || !Number.isFinite(source.duration) || source.duration <= 0) {
+        throw new FirebaseEventsError('所要時間は0より大きい数値で入力してください。', 'validation/duration');
       }
       result.duration = source.duration;
     }

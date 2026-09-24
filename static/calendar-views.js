@@ -400,6 +400,7 @@ function createTimedEventChip(ev, style, options = {}) {
 }
 
 function startResizeTop(e, id, chipEl) {
+  e.preventDefault();
   e.stopPropagation();
   const events = loadEvents();
   const ev = events.find(item => item.id === id);
@@ -414,6 +415,8 @@ function startResizeTop(e, id, chipEl) {
 
   const timeBadge = chipEl.querySelector('.event-time-badge');
   const startClientY = e.clientY;
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'ns-resize';
 
   function onMove(moveEvent) {
     const deltaPx = moveEvent.clientY - startClientY;
@@ -443,6 +446,8 @@ function startResizeTop(e, id, chipEl) {
   async function onUp() {
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
     if (finalStartHours !== initStartHours || finalDuration !== initDuration) {
       ev.time = finalTimeStr;
       ev.duration = finalDuration;
@@ -455,6 +460,7 @@ function startResizeTop(e, id, chipEl) {
 }
 
 function startResize(e, id, chipEl) {
+  e.preventDefault();
   e.stopPropagation();
   const events = loadEvents();
   const ev = events.find(item => item.id === id);
@@ -465,6 +471,8 @@ function startResize(e, id, chipEl) {
   let finalDuration = startDuration;
   const timeBadge = chipEl.querySelector('.event-time-badge');
   const startHours = ev.time ? timeToHours(ev.time) : 0;
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'ns-resize';
 
   function onMove(moveEvent) {
     const deltaPx = moveEvent.clientY - startClientY;
@@ -484,6 +492,8 @@ function startResize(e, id, chipEl) {
   async function onUp() {
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
     if (finalDuration !== startDuration) {
       ev.duration = finalDuration;
       if (!await saveEvents(events)) return;
