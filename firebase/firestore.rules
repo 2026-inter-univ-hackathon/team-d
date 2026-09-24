@@ -48,7 +48,7 @@ service cloud.firestore {
         && (data.date != null || data.time == null)
         && data.duration is int
         && data.duration >= 1
-        && data.duration <= 24
+        && data.duration <= 8760
         && isValidDate(data.remindedOn)
         && data.version is int
         && data.createdAt is timestamp
