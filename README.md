@@ -32,7 +32,6 @@
 - UI修正・追加機能のPRを先にマージ
 - バックエンド部分のPRはコンフリクト解消後に最後にマージ
 
-> **コミット履歴や PR のスクリーンショットを1枚貼ってください。**
 ![PRのスクリーンショット](https://github.com/2026-inter-univ-hackathon/team-d/blob/b64f983f55f5a38e61e2cd9ab7affde2fe42ab1e/docs/PR_capture.png)
 
 ## 動かし方
