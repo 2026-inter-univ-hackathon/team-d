@@ -26,9 +26,6 @@
   border-radius: 4px;
   font-size: .85rem;
   cursor: grab;
-  background: var(--accent);
-  color: #fff;
-  border: 2px solid var(--accent);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -36,21 +33,14 @@
 }
 
 .event.status-tentative {
-  background: var(--surface-container-highest);
-  color: var(--accent);
-  border: 2px dashed var(--accent);
-  opacity: .85;
+  opacity: .95;
 }
 
 .event.status-confirmed {
-  background: var(--accent);
-  color: #fff;
+  opacity: 1;
 }
 
 .event.status-completed {
-  background: #eee;
-  color: #888;
-  border: 2px solid #ddd;
   text-decoration: line-through;
   opacity: .7;
 }

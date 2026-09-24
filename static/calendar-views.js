@@ -30,9 +30,21 @@ function initViewElements() {
 // ============================================================
 // 予定チップの生成（ドラッグ元・クリックで詳細表示）
 // ============================================================
+function getStatusClass(status) {
+  switch ((status || '').toUpperCase()) {
+    case 'CONFIRMED':
+      return 'secondary status-confirmed';
+    case 'COMPLETED':
+      return 'surface-container status-completed';
+    case 'TENTATIVE':
+    default:
+      return 'fill status-tentative';
+  }
+}
+
 function createEventChip(ev) {
   const chip = document.createElement('div');
-  chip.className = `event status-${ev.status.toLowerCase()}`;
+  chip.className = `event ${getStatusClass(ev.status)}`;
   chip.textContent = `${ev.title || '(無題)'}`;
   chip.draggable = true;
   chip.dataset.id = ev.id;
